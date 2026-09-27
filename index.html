@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#020407"><title>FlightWall V1.7</title>
+<meta name="theme-color" content="#020407"><title>FlightWall V1.8</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.css">
 <style>
 :root{--line:#1b3147;--blue:#269cff;--txt:#f5f8fc;--muted:#8da4ba;--green:#50d494;--amber:#ffc857;--red:#ff7474}
@@ -24,8 +24,8 @@ main{flex:1;min-height:0;padding:1.4vh 1.7vw}.page{display:none;height:100%}.pag
 .list,.settings{height:100%;padding:2vh 2vw;overflow:auto}.list h2,.settings h2{margin:0 0 1.2vh}.row{display:grid;grid-template-columns:1.15fr .8fr .8fr .9fr .8fr;gap:8px;padding:1.5vh 1vw;border-bottom:1px solid var(--line);cursor:pointer}.row:active{background:#0d2944}.tag{padding:3px 6px;border-radius:6px;background:#392c11;color:#ffd982;width:max-content}
 .setting{display:flex;justify-content:space-between;align-items:center;padding:1.55vh 0;border-bottom:1px solid var(--line)}select,input{background:#0c1723;color:white;border:1px solid #2b4864;border-radius:8px;padding:8px}.coord{width:112px}.pill{display:inline-block;padding:4px 8px;border:1px solid #2b5274;border-radius:20px;color:#bfe3ff;font-size:11px}
 .airmarker{width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;transform-origin:50% 50%}
-.airmarker svg{width:28px;height:28px;overflow:visible;filter:drop-shadow(0 0 5px #269cff)}
-.airmarker svg path{fill:#d8edff}.airmarker.sel svg{width:34px;height:34px;filter:drop-shadow(0 0 8px #ffc857)}.airmarker.sel svg path{fill:#ffc857}
+.airmarker svg{width:25px;height:25px;overflow:visible}
+.airmarker svg path{fill:#ffffff}.airmarker.sel svg{width:32px;height:32px}.airmarker.sel svg path{fill:#ffc857}
 .trackBadge{display:inline-block;margin-top:8px;padding:5px 8px;border-radius:8px;background:#102335;color:#8da4ba;font-size:11px}
 .trackBadge.on{color:#ffd978;border:1px solid #6d5824}.homeMarker{font-size:24px;color:white;text-shadow:0 0 8px #269cff}
 .whyBox{margin-top:1.2vh;padding:12px 14px;border:1px solid #234762;border-radius:12px;background:rgba(8,24,37,.78)}
@@ -47,7 +47,7 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{font-size:9px}.maplibregl-ctrl-group{background:#0b1520}.maplibregl-ctrl button span{filter:invert(1)}
 @media(max-width:760px){.home{grid-template-columns:1fr}.side{display:none}.mapLayout{grid-template-columns:42% 58%}.call{font-size:13vw}.row{grid-template-columns:1.2fr .8fr .8fr}.row span:nth-child(4),.row span:nth-child(5){display:none}}
 </style></head><body><div class="app"><div id="toast"></div>
-<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.7 · <span id="clock"></span></div></header>
+<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.8 · <span id="clock"></span></div></header>
 <main>
 <section id="home" class="page active"><div class="home"><div class="card hero">
 <div class="flightTop"><div><div id="call" class="call">UAE39</div><div id="airline" class="airline">Emirates</div><div id="type" class="type">Airbus A380-800 · A6-EVN</div></div><div id="aircraftVisual" class="aircraftVisual"></div></div>
@@ -77,7 +77,7 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 
 <div class="setting"><span>Demo speed</span><select id="demoSpeed"><option value="1">1× realistic</option><option value="4">4×</option><option value="8" selected>8× test</option><option value="16">16× fast</option></select></div>
 <div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · INTERACTIVE</span></div>
-<p style="color:#8da4ba">HOME is fixed for the wall display. V1.5 removes the visible Approaching / Overhead / Departing status. FlightWall still uses trajectory and projected closest pass internally to choose the aircraft most relevant to your home.</p></div></section>
+<p style="color:#8da4ba">HOME is fixed for the wall display. V1.8 orientation is calculated from actual successive aircraft positions. The displayed nose no longer relies on the reported track value. Demo UAE39 follows a fixed curved route specifically to verify turning.</p></div></section>
 </main>
 <nav><button class="active" data-page="home">✈ FLIGHT</button><button data-page="map">⌖ MAP</button><button data-page="radar">☂ RADAR</button><button data-page="nearby">☷ NEARBY</button><button data-page="interesting">★ INTERESTING</button><button data-page="settings">⚙ SETTINGS</button></nav>
 </div>
@@ -87,25 +87,46 @@ const $=id=>document.getElementById(id), R=3958.8, DEG=Math.PI/180;
 let home={lat:+localStorage.fwlat||52.45,lon:+localStorage.fwlon||-1.93}, selected=0, following=false, maps={}, markers={mini:[],full:[]}, liveTimer=null;
 let trackedId=null, histories={}, trackSourceReady=false;
 let renderStates={}, radarFrames=[], radarIndex=0, radarPlaying=true, radarTimer=null;
+let lastSourcePositions={};
 function norm360(v){return (v%360+360)%360}
 function shortestTurn(a,b){return ((b-a+540)%360)-180}
+function bearingBetween(lat1,lon1,lat2,lon2){
+ const p1=lat1*DEG,p2=lat2*DEG,dl=(lon2-lon1)*DEG;
+ const y=Math.sin(dl)*Math.cos(p2);
+ const x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl);
+ return norm360(Math.atan2(y,x)/DEG);
+}
 function ensureRenderState(p){
  let r=renderStates[p.id];
- if(!r)r=renderStates[p.id]={lat:p.lat,lon:p.lon,track:norm360(p.track||0),targetLat:p.lat,targetLon:p.lon,targetTrack:norm360(p.track||0)};
+ if(!r)r=renderStates[p.id]={lat:p.lat,lon:p.lon,prevLat:p.lat,prevLon:p.lon,visualBearing:norm360(p.track||0),targetLat:p.lat,targetLon:p.lon};
  return r;
 }
 function syncRenderTargets(){
- planes.forEach(p=>{let r=ensureRenderState(p);r.targetLat=p.lat;r.targetLon=p.lon;r.targetTrack=norm360(p.track||0)});
+ planes.forEach(p=>{
+   let r=ensureRenderState(p), prev=lastSourcePositions[p.id];
+   if(prev && miles(prev.lat,prev.lon,p.lat,p.lon)>.002){
+     // Orientation comes from the REAL displacement, never the ADS-B track field.
+     r.targetBearing=bearingBetween(prev.lat,prev.lon,p.lat,p.lon);
+   } else if(r.targetBearing==null) r.targetBearing=norm360(p.track||0);
+   r.targetLat=p.lat;r.targetLon=p.lon;
+   lastSourcePositions[p.id]={lat:p.lat,lon:p.lon};
+ });
 }
 function animateRenderStates(){
- planes.forEach(p=>{let r=ensureRenderState(p);if(r.targetLat==null)return;
-   r.lat+=(r.targetLat-r.lat)*.18;r.lon+=(r.targetLon-r.lon)*.18;
-   let turn=shortestTurn(r.track,r.targetTrack);r.track=norm360(r.track+Math.max(-4,Math.min(4,turn)));
+ planes.forEach(p=>{
+   let r=ensureRenderState(p);if(r.targetLat==null)return;
+   let oldLat=r.lat,oldLon=r.lon;
+   r.lat+=(r.targetLat-r.lat)*.14;r.lon+=(r.targetLon-r.lon)*.14;
+   // Most important rule in V1.8: calculate nose direction from what moved on screen.
+   if(miles(oldLat,oldLon,r.lat,r.lon)>.00001){
+     let movementBearing=bearingBetween(oldLat,oldLon,r.lat,r.lon);
+     let turn=shortestTurn(r.visualBearing,movementBearing);
+     r.visualBearing=norm360(r.visualBearing+Math.max(-3.0,Math.min(3.0,turn)));
+   }
  });
  updateMarkerPositions();
  requestAnimationFrame(animateRenderStates);
 }
-
 function rememberPositions(){
  const now=Date.now(), cutoff=now-5*60*1000;
  planes.forEach(p=>{if(p.lat==null||p.lon==null)return;let h=histories[p.id]||(histories[p.id]=[]);let last=h[h.length-1];if(!last||miles(last.lat,last.lon,p.lat,p.lon)>.015)h.push({lat:p.lat,lon:p.lon,t:now});histories[p.id]=h.filter(q=>q.t>=cutoff)});
@@ -119,10 +140,19 @@ let planes=[
 function toast(t){$("toast").textContent=t;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2600)}
 function miles(a,b,c,d){let x=(c-a)*DEG,y=(d-b)*DEG,q=Math.sin(x/2)**2+Math.cos(a*DEG)*Math.cos(c*DEG)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(q))}
 function dist(p){return miles(home.lat,home.lon,p.lat,p.lon)}
+function demoRoutePoint(p){
+ // Aircraft 0 flies a deterministic looping route around HOME with broad curved turns.
+ // Other demo aircraft retain straight movement.
+ if(p!==planes[0])return null;
+ p.demoPhase=(p.demoPhase??0)+0.006*(+$("demoSpeed").value);
+ let a=p.demoPhase;
+ // Elliptical route: continuously curved and therefore ideal for orientation QA.
+ return {lat:home.lat + 0.070*Math.sin(a), lon:home.lon + 0.105*Math.cos(a)};
+}
 function moveDemo(p){
- // V1.7 demo flight model: smooth turns. Aircraft nose, movement vector and trail use same changing track.
- if(p.turnRate){p.track=norm360(p.track+p.turnRate);if(p.turnUntil&&Date.now()>p.turnUntil){p.turnRate=0;p.turnUntil=0}}
- let mph=p.spd,mi=mph/3600*(+$("demoSpeed").value),north=mi*Math.cos(p.track*DEG),east=mi*Math.sin(p.track*DEG);
+ let q=demoRoutePoint(p);
+ if(q){p.lat=q.lat;p.lon=q.lon;return}
+ let mi=p.spd/3600*(+$("demoSpeed").value),north=mi*Math.cos(p.track*DEG),east=mi*Math.sin(p.track*DEG);
  p.lat+=north/69;p.lon+=east/(69*Math.cos(p.lat*DEG));
 }
 function bearingToHome(p){let y=Math.sin((home.lon-p.lon)*DEG)*Math.cos(home.lat*DEG),x=Math.cos(p.lat*DEG)*Math.sin(home.lat*DEG)-Math.sin(p.lat*DEG)*Math.cos(home.lat*DEG)*Math.cos((home.lon-p.lon)*DEG);return (Math.atan2(y,x)/DEG+360)%360}
@@ -140,8 +170,8 @@ function initMaps(){
  maps.full.on('load',()=>{
    if(!maps.full.getSource('trackedTrail')){
      maps.full.addSource('trackedTrail',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-     maps.full.addLayer({id:'trackedTrailGlow',type:'line',source:'trackedTrail',paint:{'line-color':'#32b5ff','line-width':8,'line-opacity':0.22,'line-blur':5}});
-     maps.full.addLayer({id:'trackedTrailCore',type:'line',source:'trackedTrail',paint:{'line-color':'#7ed8ff','line-width':3.5,'line-opacity':0.95}});
+     maps.full.addLayer({id:'trackedTrailGlow',type:'line',source:'trackedTrail',paint:{'line-color':'#00c8ff','line-width':8,'line-opacity':0.20,'line-blur':5}});
+     maps.full.addLayer({id:'trackedTrailCore',type:'line',source:'trackedTrail',paint:{'line-color':'#4fe2ff','line-width':3.5,'line-opacity':0.98}});
    }
    trackSourceReady=true; updateTrail();
  });
@@ -156,7 +186,7 @@ function markerEl(p,i){
  // SVG nose points UP at 0 degrees. Rotation now maps directly to ADS-B track:
  // 0=N, 90=E, 180=S, 270=W.
  e.innerHTML='<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2 L24 16 L37 22 L37 26 L24 23 L23 34 L29 38 L29 40 L20 37 L11 40 L11 38 L17 34 L16 23 L3 26 L3 22 L16 16 Z"/></svg>';
- let rr=ensureRenderState(p);e.style.transform=`rotate(${rr.track||0}deg)`;
+ let rr=ensureRenderState(p);e.style.transform=`rotate(${rr.visualBearing||0}deg)`;
  e.onclick=()=>{selected=i;updateSelected();show('map')};return e
 }
 function clearMarkers(){Object.values(markers).flat().forEach(m=>m.remove());markers={mini:[],full:[]}}
@@ -165,7 +195,7 @@ function updateMarkerPositions(){
  ['mini','full'].forEach(k=>{
    let arr=markers[k]||[]; if(!arr.length)return;
    // index 0 is HOME marker; aircraft follow.
-   planes.forEach((p,i)=>{let r=renderStates[p.id];let mk=arr[i+1];if(r&&mk){mk.setLngLat([r.lon,r.lat]);let el=mk.getElement();el.style.transform=`rotate(${r.track||0}deg)`;}});
+   planes.forEach((p,i)=>{let r=renderStates[p.id];let mk=arr[i+1];if(r&&mk){mk.setLngLat([r.lon,r.lat]);let el=mk.getElement();el.style.transform=`rotate(${r.visualBearing||0}deg)`;}});
  });
  if(following&&trackedId&&maps.full?.loaded()){let r=renderStates[trackedId];if(r)maps.full.easeTo({center:[r.lon,r.lat],duration:0});}
 }
@@ -253,7 +283,7 @@ async function loadLive(){
   selected=0;$("modeLabel").textContent="LIVE · "+planes.length+" AIRCRAFT";$("liveDot").className="dot";$("dataAge").textContent="Live";rememberPositions();updateHome();updateSelected();updateTrail()
  }catch(e){$("modeLabel").textContent="LIVE FEED ERROR";$("liveDot").className="dot off";toast("Live feed unavailable — switch to Demo to continue")}
 }
-function demoTick(){if($("dataMode").value!=="demo")return;planes.forEach((p,i)=>{if(!p.turnRate && Math.floor(Date.now()/12000)%5===i%5){p.turnRate=(i%2?0.65:-0.55);p.turnUntil=Date.now()+6500}moveDemo(p)});syncRenderTargets();let p=planes[0];if(dist(p)>25&&status(p)==="DEPARTING"){p.lat=home.lat-.05;p.lon=home.lon+.065;p.track=317}rememberPositions();syncRenderTargets();updateHome();updateSelected();updateTrail()}
+function demoTick(){if($("dataMode").value!=="demo")return;planes.forEach(moveDemo);syncRenderTargets();let p=planes[0];rememberPositions();syncRenderTargets();updateHome();updateSelected();updateTrail()}
 function setMode(){clearInterval(liveTimer);if($("dataMode").value==="live"){$("modeLabel").textContent="CONNECTING LIVE…";loadLive();liveTimer=setInterval(loadLive,10000)}else{location.reload()}}
 $("dataMode").onchange=setMode;$("radius").onchange=()=>{if($("dataMode").value==="live")loadLive()};
 $("lat").value=home.lat.toFixed(5);$("lon").value=home.lon.toFixed(5);
