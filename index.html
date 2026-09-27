@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#020407"><title>FlightWall V1.3</title>
+<meta name="theme-color" content="#020407"><title>FlightWall V1.4</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.css">
 <style>
 :root{--line:#1b3147;--blue:#269cff;--txt:#f5f8fc;--muted:#8da4ba;--green:#50d494;--amber:#ffc857;--red:#ff7474}
@@ -23,10 +23,14 @@ main{flex:1;min-height:0;padding:1.4vh 1.7vw}.page{display:none;height:100%}.pag
 nav{height:11vh;min-height:70px;display:grid;grid-template-columns:repeat(5,1fr);gap:.7vw;padding:1vh 1.7vw max(1.3vh,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#020406}
 nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radius:12px;font-weight:900;font-size:clamp(10px,1.15vw,15px)}nav button.active{background:#0b67ae;border-color:#269cff;color:white}
 #toast{position:fixed;top:10vh;left:50%;transform:translateX(-50%);z-index:99;background:#152433;border:1px solid #365673;padding:9px 14px;border-radius:9px;display:none;font-size:13px}
+.mapHint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:8;background:rgba(4,10,16,.90);border:1px solid #31516d;border-radius:9px;padding:7px 10px;font-size:11px;color:#d9e9f5;pointer-events:none}
+.rangeBar{position:absolute;right:10px;bottom:28px;z-index:8;display:flex;gap:5px}
+.rangeBar button{background:#08131e;color:#d7e8f6;border:1px solid #31516d;border-radius:8px;padding:7px 9px;font-weight:800}
+.rangeBar button.on{background:#0b67ae;border-color:#269cff;color:#fff}
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{font-size:9px}.maplibregl-ctrl-group{background:#0b1520}.maplibregl-ctrl button span{filter:invert(1)}
 @media(max-width:760px){.home{grid-template-columns:1fr}.side{display:none}.mapLayout{grid-template-columns:42% 58%}.call{font-size:13vw}.row{grid-template-columns:1.2fr .8fr .8fr}.row span:nth-child(4),.row span:nth-child(5){display:none}}
 </style></head><body><div class="app"><div id="toast"></div>
-<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.3 · <span id="clock"></span></div></header>
+<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.4 · <span id="clock"></span></div></header>
 <main>
 <section id="home" class="page active"><div class="home"><div class="card hero">
 <div><div id="state" class="state">● APPROACHING</div><div id="call" class="call">UAE39</div><div id="airline" class="airline">Emirates</div><div id="type" class="type">Airbus A380-800 · A6-EVN</div></div>
@@ -34,17 +38,20 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 <div class="metrics"><div><div id="alt" class="mv">12,600</div><div class="ml">ALTITUDE FT</div></div><div><div id="spd" class="mv">286</div><div class="ml">SPEED MPH</div></div><div><div id="distance" class="mv">4.2</div><div class="ml">MILES FROM HOME</div></div></div></div>
 <div class="side"><div class="mapbox"><div id="miniMap" class="mapcanvas"></div><div class="mapshade"></div></div><div class="card sideinfo"><div>PROJECTED PASS<b id="pass">0.4 mi</b></div><div>TRACK<b id="track">317°</b></div><div>STATUS<b id="statusText">Approaching</b></div><div>DATA<b id="dataAge">Demo</b></div></div></div></div></section>
 
-<section id="map" class="page"><div class="mapLayout"><div class="card left"><div style="color:#269cff;font-weight:800">SELECTED AIRCRAFT</div><div id="mcall" class="big">UAE39</div><div id="mtype">Emirates · Airbus A380-800</div><div id="mreg" class="small">A6-EVN</div><div id="mdetail"></div><button class="action" id="follow">FOLLOW AIRCRAFT</button><button class="action secondary" id="details">MORE DETAILS</button><div id="detailPanel" class="details"></div></div><div class="mapbox"><div id="fullMap" class="mapcanvas"></div></div></div></section>
+<section id="map" class="page"><div class="mapLayout"><div class="card left"><div style="color:#269cff;font-weight:800">SELECTED AIRCRAFT</div><div id="mcall" class="big">UAE39</div><div id="mtype">Emirates · Airbus A380-800</div><div id="mreg" class="small">A6-EVN</div><div id="mdetail"></div><button class="action" id="follow">FOLLOW AIRCRAFT</button><button class="action secondary" id="details">MORE DETAILS</button><div id="detailPanel" class="details"></div></div><div class="mapbox"><div id="fullMap" class="mapcanvas"></div>
+    <div class="mapHint">Press and hold the map to set HOME</div>
+    <div class="rangeBar"><button data-range="5">5 mi</button><button data-range="10">10 mi</button><button class="on" data-range="25">25 mi</button><button data-range="50">50 mi</button></div>
+    </div></div></section>
 <section id="nearby" class="page"><div class="card list"><h2>Nearby aircraft</h2><div id="nearRows"></div></div></section>
 <section id="interesting" class="page"><div class="card list"><h2>Interesting aircraft</h2><div id="intRows"></div></div></section>
 <section id="settings" class="page"><div class="card settings"><h2>FlightWall settings</h2>
 <div class="setting"><span>Data mode</span><select id="dataMode"><option value="demo">Demo aircraft</option><option value="live">LIVE Wi-Fi aircraft</option></select></div>
-<div class="setting"><span>Home location</span><div><input id="lat" class="coord" type="number" step=".00001"><input id="lon" class="coord" type="number" step=".00001"> <button id="locate" class="action" style="display:inline;width:auto;padding:8px;margin:0">USE DEVICE</button></div></div>
+<div class="setting"><span>Home location</span><div><input id="lat" class="coord" type="number" step=".00001"><input id="lon" class="coord" type="number" step=".00001"> <button id="locate" class="action" style="display:inline;width:auto;padding:8px;margin:0">USE DEVICE (OPTIONAL)</button></div></div>
 <div class="setting"><span>Live search radius</span><select id="radius"><option value="10">10 nm</option><option value="25" selected>25 nm</option><option value="50">50 nm</option></select></div>
 <div class="setting"><span>Overhead trigger</span><select id="trigger"><option value=".5">0.5 miles</option><option value="1" selected>1 mile</option><option value="2">2 miles</option></select></div>
 <div class="setting"><span>Demo speed</span><select id="demoSpeed"><option value="1">1× realistic</option><option value="4">4×</option><option value="8" selected>8× test</option><option value="16">16× fast</option></select></div>
-<div class="setting"><span>Map</span><span class="pill">REAL INTERACTIVE MAP</span></div>
-<p style="color:#8da4ba">Use Demo first. LIVE requests aircraft around the saved home point over Wi-Fi. If the public feed is unavailable, FlightWall falls back to Demo rather than leaving a blank screen.</p></div></section>
+<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · INTERACTIVE</span></div>
+<p style="color:#8da4ba">HOME is fixed for the wall display. Set it by pressing and holding the Map, by entering coordinates, or optionally with Use Device. The map uses normal geographic road/land tiles so towns, roads and land are recognisable.</p></div></section>
 </main>
 <nav><button class="active" data-page="home">✈ FLIGHT</button><button data-page="map">⌖ MAP</button><button data-page="nearby">☷ NEARBY</button><button data-page="interesting">★ INTERESTING</button><button data-page="settings">⚙ SETTINGS</button></nav>
 </div>
@@ -69,11 +76,16 @@ function status(p){let d=dist(p),thr=+$("trigger").value;if(d<=thr)return"OVERHE
 function score(p){let pass=projectedPass(p),d=dist(p),approach=status(p)==="APPROACHING";return (approach?100:0)-pass*12-d*.5+(p.tag?5:0)}
 function focusAircraft(){return [...planes].filter(p=>p.lat!=null&&p.lon!=null).sort((a,b)=>score(b)-score(a))[0]||null}
 function initMaps(){
- let style='https://demotiles.maplibre.org/style.json';
- maps.mini=new maplibregl.Map({container:'miniMap',style,center:[home.lon,home.lat],zoom:8.7,interactive:false,attributionControl:false});
- maps.full=new maplibregl.Map({container:'fullMap',style,center:[home.lon,home.lat],zoom:9.2,attributionControl:true});
+ const style={version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,minzoom:0,maxzoom:19,attribution:'© OpenStreetMap contributors'}},layers:[{id:'osm',type:'raster',source:'osm',paint:{'raster-saturation':-0.30,'raster-brightness-max':0.78,'raster-contrast':0.12}}]};
+ maps.mini=new maplibregl.Map({container:'miniMap',style:JSON.parse(JSON.stringify(style)),center:[home.lon,home.lat],zoom:9.0,interactive:false,attributionControl:false,renderWorldCopies:false});
+ maps.full=new maplibregl.Map({container:'fullMap',style:JSON.parse(JSON.stringify(style)),center:[home.lon,home.lat],zoom:9.3,attributionControl:true,renderWorldCopies:false});
  maps.full.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
  Object.values(maps).forEach(m=>m.on('load',()=>renderMarkers()));
+ let holdTimer=null,holdPoint=null;
+ const startHold=e=>{holdPoint=e.lngLat;clearTimeout(holdTimer);holdTimer=setTimeout(()=>{if(!holdPoint)return;$("lat").value=holdPoint.lat.toFixed(5);$("lon").value=holdPoint.lng.toFixed(5);saveHome();toast("HOME set from map");},700)};
+ const cancelHold=()=>{clearTimeout(holdTimer);holdTimer=null;holdPoint=null};
+ maps.full.on('mousedown',startHold); maps.full.on('mouseup',cancelHold); maps.full.on('dragstart',cancelHold);
+ maps.full.on('touchstart',startHold); maps.full.on('touchend',cancelHold); maps.full.on('touchmove',cancelHold);
 }
 function markerEl(p,i){let e=document.createElement('div');e.className='airmarker'+(i===selected?' sel':'');e.textContent='✈';e.style.transform=`rotate(${p.track||0}deg)`;e.onclick=()=>{selected=i;updateSelected();show('map')};return e}
 function clearMarkers(){Object.values(markers).flat().forEach(m=>m.remove());markers={mini:[],full:[]}}
@@ -100,6 +112,12 @@ $("lat").value=home.lat.toFixed(5);$("lon").value=home.lon.toFixed(5);
 function saveHome(){home.lat=+$("lat").value;home.lon=+$("lon").value;localStorage.fwlat=home.lat;localStorage.fwlon=home.lon;Object.values(maps).forEach(m=>m.easeTo({center:[home.lon,home.lat],duration:600}));toast("Home location saved");updateHome();updateSelected()}
 $("lat").onchange=saveHome;$("lon").onchange=saveHome;
 $("locate").onclick=()=>navigator.geolocation?navigator.geolocation.getCurrentPosition(pos=>{$("lat").value=pos.coords.latitude.toFixed(5);$("lon").value=pos.coords.longitude.toFixed(5);saveHome()},()=>toast("Location permission was not available")):toast("Geolocation unavailable");
+function setMapRange(mi){
+ const zoomByRange={5:11.5,10:10.5,25:9.3,50:8.3};
+ document.querySelectorAll(".rangeBar button").forEach(b=>b.classList.toggle("on",+b.dataset.range===+mi));
+ maps.full?.easeTo({center:[home.lon,home.lat],zoom:zoomByRange[mi]||9.3,duration:700});
+}
+document.querySelectorAll(".rangeBar button").forEach(b=>b.onclick=()=>setMapRange(+b.dataset.range));
 initMaps();updateHome();updateSelected();setInterval(demoTick,1000);
 function clock(){let d=new Date();$("clock").textContent=d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}clock();setInterval(clock,1000);
 </script></body></html>
