@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#020407"><title>FlightWall V1.9</title>
+<meta name="theme-color" content="#020407"><title>FlightWall V1.10</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.css">
 <style>
 :root{--line:#1b3147;--blue:#269cff;--txt:#f5f8fc;--muted:#8da4ba;--green:#50d494;--amber:#ffc857;--red:#ff7474}
@@ -47,7 +47,7 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{font-size:9px}.maplibregl-ctrl-group{background:#0b1520}.maplibregl-ctrl button span{filter:invert(1)}
 @media(max-width:760px){.home{grid-template-columns:1fr}.side{display:none}.mapLayout{grid-template-columns:42% 58%}.call{font-size:13vw}.row{grid-template-columns:1.2fr .8fr .8fr}.row span:nth-child(4),.row span:nth-child(5){display:none}}
 </style></head><body><div class="app"><div id="toast"></div>
-<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.9 · <span id="clock"></span></div></header>
+<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.10 · <span id="clock"></span></div></header>
 <main>
 <section id="home" class="page active"><div class="home"><div class="card hero">
 <div class="flightTop"><div><div id="call" class="call">UAE39</div><div id="airline" class="airline">Emirates</div><div id="type" class="type">Airbus A380-800 · A6-EVN</div></div><div id="aircraftVisual" class="aircraftVisual"></div></div>
@@ -76,8 +76,8 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 <div class="setting"><span>Live search radius</span><select id="radius"><option value="10">10 nm</option><option value="25" selected>25 nm</option><option value="50">50 nm</option></select></div>
 
 <div class="setting"><span>Demo speed</span><select id="demoSpeed"><option value="1">1× realistic</option><option value="4">4×</option><option value="8" selected>8× test</option><option value="16">16× fast</option></select></div>
-<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · STABLE MARKERS</span></div><div class="setting"><span>V1.9 map engine</span><span class="pill">PERSISTENT MARKERS · NATIVE ROTATION</span></div>
-<p style="color:#8da4ba">HOME is fixed for the wall display. V1.8 orientation is calculated from actual successive aircraft positions. The displayed nose no longer relies on the reported track value. Demo UAE39 follows a fixed curved route specifically to verify turning.</p></div></section>
+<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · STABLE MARKERS</span></div><div class="setting"><span>V1.10 movement engine</span><span class="pill">CONTINUOUS · TIME-BASED · DEAD RECKONING</span></div>
+<p style="color:#8da4ba">HOME is fixed for the wall display. V1.10 continuously projects aircraft between data updates using speed and bearing, then gently corrects to the next observed position without stopping.</p></div></section>
 </main>
 <nav><button class="active" data-page="home">✈ FLIGHT</button><button data-page="map">⌖ MAP</button><button data-page="radar">☂ RADAR</button><button data-page="nearby">☷ NEARBY</button><button data-page="interesting">★ INTERESTING</button><button data-page="settings">⚙ SETTINGS</button></nav>
 </div>
@@ -87,7 +87,7 @@ const $=id=>document.getElementById(id), R=3958.8, DEG=Math.PI/180;
 let home={lat:+localStorage.fwlat||52.45,lon:+localStorage.fwlon||-1.93}, selected=0, following=false, maps={}, markers={mini:new Map(),full:new Map()}, homeMarkers={}, liveTimer=null;
 let trackedId=null, histories={}, trackSourceReady=false;
 let renderStates={}, radarFrames=[], radarIndex=0, radarPlaying=true, radarTimer=null;
-let lastSourcePositions={};
+let lastSourcePositions={}, lastFrameTime=performance.now();
 function norm360(v){return (v%360+360)%360}
 function shortestTurn(a,b){return ((b-a+540)%360)-180}
 function bearingBetween(lat1,lon1,lat2,lon2){
@@ -98,34 +98,34 @@ function bearingBetween(lat1,lon1,lat2,lon2){
 }
 function ensureRenderState(p){
  let r=renderStates[p.id];
- if(!r)r=renderStates[p.id]={lat:p.lat,lon:p.lon,prevLat:p.lat,prevLon:p.lon,visualBearing:norm360(p.track||0),targetLat:p.lat,targetLon:p.lon};
+ if(!r)r=renderStates[p.id]={lat:p.lat,lon:p.lon,bearing:norm360(p.track||0),targetBearing:norm360(p.track||0),speedMph:+p.spd||0,correctionLat:0,correctionLon:0};
  return r;
 }
 function syncRenderTargets(){
  planes.forEach(p=>{
-   let r=ensureRenderState(p), prev=lastSourcePositions[p.id];
-   if(prev && miles(prev.lat,prev.lon,p.lat,p.lon)>.002){
-     // Orientation comes from the REAL displacement, never the ADS-B track field.
-     r.targetBearing=bearingBetween(prev.lat,prev.lon,p.lat,p.lon);
-   } else if(r.targetBearing==null) r.targetBearing=norm360(p.track||0);
-   r.targetLat=p.lat;r.targetLon=p.lon;
+   let r=ensureRenderState(p),prev=lastSourcePositions[p.id];
+   if(prev && miles(prev.lat,prev.lon,p.lat,p.lon)>.001)r.targetBearing=bearingBetween(prev.lat,prev.lon,p.lat,p.lon);
+   else if(!prev && p.track!=null)r.targetBearing=norm360(+p.track||0);
+   r.speedMph=+p.spd||r.speedMph||0;
+   r.correctionLat=p.lat-r.lat;r.correctionLon=p.lon-r.lon;
    lastSourcePositions[p.id]={lat:p.lat,lon:p.lon};
  });
 }
+function advancePoint(lat,lon,bearingDeg,milesTravelled){
+ const br=bearingDeg*DEG,north=milesTravelled*Math.cos(br),east=milesTravelled*Math.sin(br);
+ return {lat:lat+north/69,lon:lon+east/(69*Math.max(.15,Math.cos(lat*DEG)))};
+}
 function animateRenderStates(ts){
+ let dt=Math.min(.10,Math.max(0,(ts-lastFrameTime)/1000));lastFrameTime=ts;
  planes.forEach(p=>{
-   let r=ensureRenderState(p);if(r.targetLat==null)return;
-   let oldLat=r.lat,oldLon=r.lon;
-   r.lat+=(r.targetLat-r.lat)*.14;r.lon+=(r.targetLon-r.lon)*.14;
-   // Most important rule in V1.8: calculate nose direction from what moved on screen.
-   if(miles(oldLat,oldLon,r.lat,r.lon)>.00001){
-     let movementBearing=bearingBetween(oldLat,oldLon,r.lat,r.lon);
-     let turn=shortestTurn(r.visualBearing,movementBearing);
-     r.visualBearing=norm360(r.visualBearing+Math.max(-3.0,Math.min(3.0,turn)));
-   }
+   let r=ensureRenderState(p),turn=shortestTurn(r.bearing,r.targetBearing),maxTurn=55*dt;
+   r.bearing=norm360(r.bearing+Math.max(-maxTurn,Math.min(maxTurn,turn)));
+   let q=advancePoint(r.lat,r.lon,r.bearing,(r.speedMph/3600)*dt);r.lat=q.lat;r.lon=q.lon;
+   const alpha=1-Math.exp(-dt/2.5);
+   r.lat+=r.correctionLat*alpha;r.lon+=r.correctionLon*alpha;
+   r.correctionLat*=1-alpha;r.correctionLon*=1-alpha;
  });
- updateMarkerPositions(ts||performance.now());
- requestAnimationFrame(animateRenderStates);
+ updateMarkerPositions(ts);requestAnimationFrame(animateRenderStates);
 }
 function rememberPositions(){
  const now=Date.now(), cutoff=now-5*60*1000;
@@ -140,20 +140,16 @@ let planes=[
 function toast(t){$("toast").textContent=t;$("toast").style.display="block";setTimeout(()=>$("toast").style.display="none",2600)}
 function miles(a,b,c,d){let x=(c-a)*DEG,y=(d-b)*DEG,q=Math.sin(x/2)**2+Math.cos(a*DEG)*Math.cos(c*DEG)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(q))}
 function dist(p){return miles(home.lat,home.lon,p.lat,p.lon)}
-function demoRoutePoint(p){
- // Aircraft 0 flies a deterministic looping route around HOME with broad curved turns.
- // Other demo aircraft retain straight movement.
- if(p!==planes[0])return null;
- p.demoPhase=(p.demoPhase??0)+0.006*(+$("demoSpeed").value);
- let a=p.demoPhase;
- // Elliptical route: continuously curved and therefore ideal for orientation QA.
- return {lat:home.lat + 0.070*Math.sin(a), lon:home.lon + 0.105*Math.cos(a)};
-}
 function moveDemo(p){
- let q=demoRoutePoint(p);
- if(q){p.lat=q.lat;p.lon=q.lon;return}
- let mi=p.spd/3600*(+$("demoSpeed").value),north=mi*Math.cos(p.track*DEG),east=mi*Math.sin(p.track*DEG);
- p.lat+=north/69;p.lon+=east/(69*Math.cos(p.lat*DEG));
+ if(p===planes[0]){
+   p.demoAngle=(p.demoAngle??0)+0.035;
+   let a=p.demoAngle,nextLat=home.lat+0.070*Math.sin(a),nextLon=home.lon+0.105*Math.cos(a);
+   let prevLat=p.demoFeedLat??p.lat,prevLon=p.demoFeedLon??p.lon;
+   p.track=bearingBetween(prevLat,prevLon,nextLat,nextLon);
+   p.demoFeedLat=nextLat;p.demoFeedLon=nextLon;p.lat=nextLat;p.lon=nextLon;p.spd=286;
+ }else{
+   let q=advancePoint(p.lat,p.lon,p.track,p.spd/3600);p.lat=q.lat;p.lon=q.lon;
+ }
 }
 function bearingToHome(p){let y=Math.sin((home.lon-p.lon)*DEG)*Math.cos(home.lat*DEG),x=Math.cos(p.lat*DEG)*Math.sin(home.lat*DEG)-Math.sin(p.lat*DEG)*Math.cos(home.lat*DEG)*Math.cos((home.lon-p.lon)*DEG);return (Math.atan2(y,x)/DEG+360)%360}
 function angleDiff(a,b){return Math.abs(((a-b+540)%360)-180)}
@@ -205,7 +201,7 @@ function reconcileMarkers(){
      if(!mk){
        let el=markerEl(p);
        mk=new maplibregl.Marker({
-         element:el,anchor:'center',rotation:ensureRenderState(p).visualBearing||0,
+         element:el,anchor:'center',rotation:ensureRenderState(p).bearing||0,
          rotationAlignment:'map',pitchAlignment:'map',subpixelPositioning:true
        }).setLngLat([p.lon,p.lat]).addTo(m);
        markers[k].set(p.id,mk);
@@ -220,7 +216,7 @@ function updateMarkerPositions(ts=0){
    let store=markers[k]; if(!store)return;
    planes.forEach(p=>{
      let r=renderStates[p.id],mk=store.get(p.id);
-     if(r&&mk){mk.setLngLat([r.lon,r.lat]);mk.setRotation(r.visualBearing||0);
+     if(r&&mk){mk.setLngLat([r.lon,r.lat]);mk.setRotation(r.bearing||0);
        mk.getElement().classList.toggle('sel',planes[selected]?.id===p.id);
      }
    });
