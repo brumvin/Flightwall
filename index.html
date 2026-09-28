@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#020407"><title>FlightWall V1.12</title>
+<meta name="theme-color" content="#020407"><title>FlightWall V1.13</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.css">
 <style>
 :root{--line:#1b3147;--blue:#269cff;--txt:#f5f8fc;--muted:#8da4ba;--green:#50d494;--amber:#ffc857;--red:#ff7474}
@@ -9,7 +9,7 @@
 .app{height:100dvh;display:flex;flex-direction:column;background:#020407}header{height:8.5vh;min-height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 2.2vw;border-bottom:1px solid var(--line);background:#04080d}
 .brand{font-size:clamp(18px,2.4vw,32px);font-weight:900;letter-spacing:.08em}.brand span{color:var(--blue)}.status{font-size:clamp(9px,1vw,13px);color:var(--muted)}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green);margin-right:6px}.dot.off{background:var(--red)}
 main{flex:1;min-height:0;padding:1.4vh 1.7vw}.page{display:none;height:100%}.page.active{display:block}.card{background:linear-gradient(145deg,#0e1a27,#04080d);border:1px solid var(--line);border-radius:18px}
-.home{height:100%;display:grid;grid-template-columns:1.18fr .82fr;gap:1.2vw}.hero{padding:2.4vh 2.5vw;display:flex;flex-direction:column;justify-content:space-between}.state{color:var(--amber);font-weight:900;letter-spacing:.13em;font-size:clamp(11px,1.25vw,16px)}
+.home{height:100%;display:grid;grid-template-columns:1fr;gap:0}.hero{padding:2.4vh 2.5vw;display:flex;flex-direction:column;justify-content:space-between}.state{color:var(--amber);font-weight:900;letter-spacing:.13em;font-size:clamp(11px,1.25vw,16px)}
 .call{font-size:clamp(46px,7vw,92px);font-weight:900;line-height:.92}
 .flightTop{display:grid;grid-template-columns:1fr minmax(180px,38%);align-items:center;gap:18px}
 .aircraftVisual{height:150px;display:flex;align-items:center;justify-content:center;position:relative}
@@ -70,14 +70,14 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
  #home .flightFacts{margin-top:1.5vh}
 }
 </style></head><body><div class="app"><div id="toast"></div>
-<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.12 · <span id="clock"></span></div></header>
+<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.13 · <span id="clock"></span></div></header>
 <main>
 <section id="home" class="page active"><div class="home"><div class="card hero">
 <div class="flightTop"><div><div id="call" class="call">UAE39</div><div id="airline" class="airline">Emirates</div><div id="type" class="type">Airbus A380-800 · A6-EVN</div></div><div id="aircraftVisual" class="aircraftVisual"></div></div>
 <div class="route"><div id="from" class="airport">DXB</div><div class="routeLine"><b>✈</b></div><div id="to" class="airport">BHX</div></div>
 <div class="metrics"><div><div id="alt" class="mv">12,600</div><div class="ml">ALTITUDE FT</div></div><div><div id="spd" class="mv">286</div><div class="ml">SPEED MPH</div></div><div><div id="distance" class="mv">4.2</div><div class="ml">MILES FROM HOME</div></div></div><div class="whyBox"><div class="whyTitle">WHY YOU’RE SEEING THIS</div><div id="whyText" class="whyText">FlightWall is calculating the aircraft most relevant to HOME.</div>
 <div class="flightFacts"><div class="flightFact"><span>VERTICAL</span><b id="verticalFact">—</b></div><div class="flightFact"><span>EXACT TYPE</span><b id="exactTypeFact">—</b></div><div class="flightFact"><span>REGISTRATION</span><b id="regFact">—</b></div></div></div></div>
-<div class="side"><div class="mapbox"><div id="miniMap" class="mapcanvas"></div><div class="mapshade"></div></div><div class="card sideinfo"><div>PROJECTED PASS<b id="pass">0.4 mi</b></div><div>TRACK<b id="track">317°</b></div><div>AIRCRAFT<b id="visualType">A380</b></div><div>DATA<b id="dataAge">Demo</b></div></div></div></div></section>
+</div></section>
 
 <section id="map" class="page"><div class="mapLayout"><div class="card left"><div style="color:#269cff;font-weight:800">SELECTED AIRCRAFT</div><div id="mcall" class="big">UAE39</div><div id="mtype">Emirates · Airbus A380-800</div><div id="mreg" class="small">A6-EVN</div><div id="mdetail"></div><button class="action" id="follow">TRACK AIRCRAFT</button><span id="trackBadge" class="trackBadge">Trail hidden</span><button class="action secondary" id="details">MORE DETAILS</button><div id="detailPanel" class="details"></div></div><div class="mapbox"><div id="fullMap" class="mapcanvas"></div>
     <div class="mapHint">Press and hold the map to set HOME</div>
@@ -100,15 +100,15 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 <div class="setting"><span>Live search radius</span><select id="radius"><option value="10">10 nm</option><option value="25" selected>25 nm</option><option value="50">50 nm</option></select></div><div id="liveDiag" class="liveNote">Live feed not tested yet.</div>
 
 <div class="setting"><span>Demo speed</span><select id="demoSpeed"><option value="1">1× realistic</option><option value="4">4×</option><option value="8" selected>8× test</option><option value="16">16× fast</option></select></div>
-<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · STABLE MARKERS</span></div><div class="setting"><span>V1.12 display + live data</span><span class="pill">PORTRAIT FLIGHT VIEW · LIVE FALLBACK</span></div>
-<p style="color:#8da4ba">Portrait Flight mode is now details-only: no map is shown. Live mode first tries ADSB.lol directly and, for the GitHub Pages prototype, can fall back to a browser relay when cross-origin browser security blocks the direct request.</p></div></section>
+<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · STABLE MARKERS</span></div><div class="setting"><span>V1.13 live + Flight screen</span><span class="pill">DETAILS-ONLY FLIGHT · MULTI-SOURCE LIVE</span></div>
+<p style="color:#8da4ba">FLIGHT is now details-only in every orientation; the map exists only on MAP. Live mode uses Airplanes.live first and adsb.fi as a fallback, avoiding the failed ADSB.lol browser/CORS relay route.</p></div></section>
 </main>
 <nav><button class="active" data-page="home">✈ FLIGHT</button><button data-page="map">⌖ MAP</button><button data-page="radar">☂ RADAR</button><button data-page="nearby">☷ NEARBY</button><button data-page="moments">◷ MOMENTS</button><button data-page="settings">⚙ SETTINGS</button></nav>
 </div>
 <script type="module">
 import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.mjs';
 const $=id=>document.getElementById(id), R=3958.8, DEG=Math.PI/180;
-let home={lat:+localStorage.fwlat||52.45,lon:+localStorage.fwlon||-1.93}, selected=0, following=false, maps={}, markers={mini:new Map(),full:new Map()}, homeMarkers={}, liveTimer=null;
+let home={lat:+localStorage.fwlat||52.45,lon:+localStorage.fwlon||-1.93}, selected=0, following=false, maps={}, markers={full:new Map()}, homeMarkers={}, liveTimer=null;
 let trackedId=null, histories={}, trackSourceReady=false;
 let renderStates={}, radarFrames=[], radarIndex=0, radarPlaying=true, radarTimer=null;
 let lastSourcePositions={}, lastFrameTime=performance.now();
@@ -183,10 +183,9 @@ function score(p){let pass=projectedPass(p),d=dist(p),approach=status(p)==="APPR
 function focusAircraft(){return [...planes].filter(p=>p.lat!=null&&p.lon!=null).sort((a,b)=>score(b)-score(a))[0]||null}
 function initMaps(){
  const style={version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,minzoom:0,maxzoom:19,attribution:'© OpenStreetMap contributors'}},layers:[{id:'osm',type:'raster',source:'osm',paint:{'raster-saturation':-0.30,'raster-brightness-max':0.78,'raster-contrast':0.12,'raster-fade-duration':0}}]};
- maps.mini=new maplibregl.Map({container:'miniMap',style:JSON.parse(JSON.stringify(style)),center:[home.lon,home.lat],zoom:9.0,interactive:false,attributionControl:false,renderWorldCopies:false,fadeDuration:0});
  maps.full=new maplibregl.Map({container:'fullMap',style:JSON.parse(JSON.stringify(style)),center:[home.lon,home.lat],zoom:9.3,attributionControl:true,renderWorldCopies:false,fadeDuration:0});
  maps.full.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
- Object.values(maps).forEach(m=>m.on('load',()=>reconcileMarkers()));
+ Object.values(maps).forEach(m=>m&&m.on('load',()=>reconcileMarkers()));
  maps.full.dragRotate.disable(); maps.full.touchZoomRotate.disableRotation();
  maps.full.on('load',()=>{
    if(!maps.full.getSource('trackedTrail')){
@@ -210,7 +209,7 @@ function markerEl(p){
 }
 function reconcileMarkers(){
  if(!maps.mini||!maps.full)return;
- ['mini','full'].forEach(k=>{
+ ['full'].forEach(k=>{
    let m=maps[k]; if(!m?.loaded())return;
    if(!homeMarkers[k]){
      let h=document.createElement('div');h.className='homeMarker';h.textContent='◎';
@@ -236,7 +235,7 @@ function reconcileMarkers(){
 }
 let lastCameraFollow=0;
 function updateMarkerPositions(ts=0){
- ['mini','full'].forEach(k=>{
+ ['full'].forEach(k=>{
    let store=markers[k]; if(!store)return;
    planes.forEach(p=>{
      let r=renderStates[p.id],mk=store.get(p.id);
@@ -339,10 +338,10 @@ function whySeeing(p){
 function updateHome(){let p=focusAircraft();if(!p){$("call").textContent="—";$("airline").textContent="No aircraft currently selected";$("distance").textContent="—";$("aircraftVisual").innerHTML=aircraftSVG("generic","NO AIRCRAFT");return}$("call").textContent=p.id;$("airline").textContent=p.airline||"Aircraft";$("type").textContent=(p.type||p.code||"Type unknown")+" · "+(p.reg||"—");$("from").textContent=p.from||"LIVE";$("to").textContent=p.to||"—";$("alt").textContent=(p.alt??0).toLocaleString();$("spd").textContent=Math.round(p.spd||0);$("distance").textContent=dist(p).toFixed(1);$("track").textContent=Math.round(p.track||0)+"°";$("pass").textContent=projectedPass(p).toFixed(1)+" mi";setAircraftVisual(p);$("whyText").textContent=whySeeing(p);
  $("verticalFact").textContent=verticalLabel(p);$("exactTypeFact").textContent=p.type||p.code||"Unknown";$("regFact").textContent=p.reg||"Unknown";
  if(p.from||p.to){$("from").textContent=airportLabel(p.from);$("to").textContent=airportLabel(p.to)}
- maybeSaveMoment(p);if(maps.mini?.loaded())maps.mini.easeTo({center:[home.lon,home.lat],duration:500});}
+ maybeSaveMoment(p);}
 function updateSelected(){let p=planes[selected]||planes[0];if(!p)return;$("follow").textContent=trackedId===p.id?"STOP TRACKING":"TRACK AIRCRAFT";$("mcall").textContent=p.id;$("mtype").textContent=(p.airline||"Aircraft")+" · "+(p.type||p.code||"Unknown type");$("mreg").textContent=p.reg||"Registration unavailable";$("mdetail").innerHTML=(p.alt??0).toLocaleString()+" ft<br>"+Math.round(p.spd||0)+" mph<br>"+dist(p).toFixed(1)+" miles from home<br>Track "+Math.round(p.track||0)+"°";$("detailPanel").innerHTML=`Route <b>${p.from||"Not available"} → ${p.to||"Not available"}</b><br><br>Projected pass <b>${projectedPass(p).toFixed(1)} miles</b><br><br>Track <b>${Math.round(p.track||0)}°</b><br><br>Interesting <b>${p.tag||"Normal traffic"}</b>`;reconcileMarkers();rows();}
 function rows(){let near=[...planes].sort((a,b)=>dist(a)-dist(b));$("nearRows").innerHTML=near.map(p=>`<div class="row" data-i="${planes.indexOf(p)}"><b>${p.id}</b><span>${p.code||"—"}</span><span>${dist(p).toFixed(1)} mi</span><span>${(p.alt??0).toLocaleString()} ft</span><span>${p.tag||"—"}</span></div>`).join("");$("intRows").innerHTML=planes.filter(p=>p.tag).map(p=>`<div class="row" data-i="${planes.indexOf(p)}"><b>${p.id}</b><span>${p.code||"—"}</span><span>${dist(p).toFixed(1)} mi</span><span>${(p.alt??0).toLocaleString()} ft</span><span class="tag">${p.tag}</span></div>`).join("");document.querySelectorAll(".row").forEach(r=>r.onclick=()=>{selected=+r.dataset.i;updateSelected();show("map")})}
-function show(id){document.querySelectorAll(".page,nav button").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.querySelector(`button[data-page="${id}"]`).classList.add("active");setTimeout(()=>{if(id==="map")maps.full?.resize();if(id==="home")maps.mini?.resize();if(id==="radar"){initRadarMap();setTimeout(()=>maps.radar?.resize(),80)}},100)}
+function show(id){document.querySelectorAll(".page,nav button").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.querySelector(`button[data-page="${id}"]`).classList.add("active");setTimeout(()=>{if(id==="map")maps.full?.resize();if(id==="radar"){initRadarMap();setTimeout(()=>maps.radar?.resize(),80)}},100)}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.page));
 $("follow").onclick=()=>{
  let p=planes[selected]; if(!p)return;
@@ -352,39 +351,38 @@ $("follow").onclick=()=>{
 };
 $("details").onclick=()=>{$("detailPanel").classList.toggle("open");$("details").textContent=$("detailPanel").classList.contains("open")?"HIDE DETAILS":"MORE DETAILS"};
 function classify(a){let t=a.t||"";if(t==="A388")return"A380";if(["B744","B748","B77W","A35K"].includes(t))return"HEAVY";if((a.dbFlags||0)&1)return"MIL";if((a.alt_baro||99999)<3000)return"LOW";return""}
-async function fetchJsonWithFallback(url){
- const attempts=[
-   {name:"Direct ADSB.lol",url},
-   {name:"Browser relay",url:`https://corsproxy.io/?url=${encodeURIComponent(url)}`}
+async function fetchAircraftLive(lat,lon,rad){
+ const sources=[
+  {name:"Airplanes.live",url:`https://api.airplanes.live/v2/point/${lat}/${lon}/${rad}`,parse:d=>d.ac||[]},
+  {name:"adsb.fi",url:`https://opendata.adsb.fi/api/v3/lat/${lat}/lon/${lon}/dist/${rad}`,parse:d=>d.aircraft||d.ac||[]}
  ];
  let errors=[];
- for(const a of attempts){
-   try{
-     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
-     let r=await fetch(a.url,{cache:"no-store",signal:controller.signal});clearTimeout(timer);
-     if(!r.ok)throw Error(`HTTP ${r.status}`);
-     let d=await r.json();return {data:d,source:a.name};
-   }catch(e){errors.push(`${a.name}: ${e.name==="AbortError"?"timeout":e.message}`)}
+ for(const s of sources){
+  try{
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+   let r=await fetch(s.url,{cache:"no-store",signal:controller.signal,mode:"cors"});clearTimeout(timer);
+   if(!r.ok)throw Error(`HTTP ${r.status}`);
+   let d=await r.json(),ac=s.parse(d);
+   if(!Array.isArray(ac))throw Error("Unexpected response");
+   return {ac,source:s.name};
+  }catch(e){errors.push(`${s.name}: ${e.name==="AbortError"?"timeout":e.message}`)}
  }
  throw Error(errors.join(" | "));
 }
 async function loadLive(){
  try{
-  let rad=+$("radius").value;
-  // ADSB.lol documents /v2/point/{lat}/{lon}/{radius}; direct browser access may be blocked by CORS.
-  let u=`https://api.adsb.lol/v2/point/${home.lat}/${home.lon}/${rad}`;
-  let result=await fetchJsonWithFallback(u),d=result.data;
-  let fresh=(d.ac||[]).filter(a=>a.lat!=null&&a.lon!=null);
-  if(!fresh.length)throw Error("Feed connected but returned no positioned aircraft in this radius");
+  let rad=+$("radius").value,result=await fetchAircraftLive(home.lat,home.lon,rad);
+  let fresh=result.ac.filter(a=>a.lat!=null&&a.lon!=null);
+  if(!fresh.length)throw Error(`${result.source} connected but no positioned aircraft were returned inside ${rad} nm`);
   planes=fresh.map(a=>({id:(a.flight||a.r||a.hex||"UNKNOWN").trim(),airline:"Live aircraft",type:a.t||"Type unknown",code:a.t||"—",reg:a.r||"—",from:"",to:"",alt:(a.alt_baro==="ground"?0:(a.alt_baro??a.alt_geom??0)),spd:(a.gs||0)*1.15078,track:a.track||0,lat:a.lat,lon:a.lon,vrate:a.baro_rate??a.geom_rate??0,tag:classify(a),seen:a.seen}));
   selected=Math.min(selected,planes.length-1);
-  $("modeLabel").textContent=`LIVE · ${planes.length} AIRCRAFT`;$("liveDot").className="dot";$("dataAge").textContent=result.source;
+  $("modeLabel").textContent=`LIVE · ${planes.length} AIRCRAFT`;$("liveDot").className="dot";$("dataAge")&&($("dataAge").textContent=result.source);
   let diag=$("liveDiag");if(diag){diag.className="liveNote ok";diag.textContent=`Connected: ${result.source} · ${planes.length} positioned aircraft`}
   rememberPositions();syncRenderTargets();reconcileMarkers();updateHome();updateSelected();updateTrail()
  }catch(e){
   $("modeLabel").textContent="LIVE FEED ERROR";$("liveDot").className="dot off";
   let diag=$("liveDiag");if(diag){diag.className="liveNote bad";diag.textContent=`Live error: ${e.message}`}
-  toast("Live feed unavailable — details are shown in Settings")
+  toast("Live feed unavailable — see Settings")
  }
 }
 function demoTick(){if($("dataMode").value!=="demo")return;planes.forEach(moveDemo);syncRenderTargets();let p=planes[0];rememberPositions();syncRenderTargets();reconcileMarkers();updateHome();updateSelected();updateTrail()}
