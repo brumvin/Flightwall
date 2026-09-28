@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#020407"><title>FlightWall V1.8</title>
+<meta name="theme-color" content="#020407"><title>FlightWall V1.9</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.css">
 <style>
 :root{--line:#1b3147;--blue:#269cff;--txt:#f5f8fc;--muted:#8da4ba;--green:#50d494;--amber:#ffc857;--red:#ff7474}
@@ -23,7 +23,7 @@ main{flex:1;min-height:0;padding:1.4vh 1.7vw}.page{display:none;height:100%}.pag
 .mapLayout{height:100%;display:grid;grid-template-columns:minmax(250px,27%) 1fr;gap:1vw}.left{padding:2vh 1.4vw;overflow:auto}.left .big{font-size:40px;font-weight:900}.small{color:var(--muted);margin:5px 0 14px}.action{display:block;width:100%;padding:11px;margin:8px 0;border:1px solid #2b5274;border-radius:10px;background:#0b65a9;color:white;font-weight:900}.action.secondary{background:#0a1520}
 .list,.settings{height:100%;padding:2vh 2vw;overflow:auto}.list h2,.settings h2{margin:0 0 1.2vh}.row{display:grid;grid-template-columns:1.15fr .8fr .8fr .9fr .8fr;gap:8px;padding:1.5vh 1vw;border-bottom:1px solid var(--line);cursor:pointer}.row:active{background:#0d2944}.tag{padding:3px 6px;border-radius:6px;background:#392c11;color:#ffd982;width:max-content}
 .setting{display:flex;justify-content:space-between;align-items:center;padding:1.55vh 0;border-bottom:1px solid var(--line)}select,input{background:#0c1723;color:white;border:1px solid #2b4864;border-radius:8px;padding:8px}.coord{width:112px}.pill{display:inline-block;padding:4px 8px;border:1px solid #2b5274;border-radius:20px;color:#bfe3ff;font-size:11px}
-.airmarker{width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;transform-origin:50% 50%}
+.airmarker{width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .airmarker svg{width:25px;height:25px;overflow:visible}
 .airmarker svg path{fill:#ffffff}.airmarker.sel svg{width:32px;height:32px}.airmarker.sel svg path{fill:#ffc857}
 .trackBadge{display:inline-block;margin-top:8px;padding:5px 8px;border-radius:8px;background:#102335;color:#8da4ba;font-size:11px}
@@ -47,7 +47,7 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{font-size:9px}.maplibregl-ctrl-group{background:#0b1520}.maplibregl-ctrl button span{filter:invert(1)}
 @media(max-width:760px){.home{grid-template-columns:1fr}.side{display:none}.mapLayout{grid-template-columns:42% 58%}.call{font-size:13vw}.row{grid-template-columns:1.2fr .8fr .8fr}.row span:nth-child(4),.row span:nth-child(5){display:none}}
 </style></head><body><div class="app"><div id="toast"></div>
-<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.8 · <span id="clock"></span></div></header>
+<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.9 · <span id="clock"></span></div></header>
 <main>
 <section id="home" class="page active"><div class="home"><div class="card hero">
 <div class="flightTop"><div><div id="call" class="call">UAE39</div><div id="airline" class="airline">Emirates</div><div id="type" class="type">Airbus A380-800 · A6-EVN</div></div><div id="aircraftVisual" class="aircraftVisual"></div></div>
@@ -76,7 +76,7 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 <div class="setting"><span>Live search radius</span><select id="radius"><option value="10">10 nm</option><option value="25" selected>25 nm</option><option value="50">50 nm</option></select></div>
 
 <div class="setting"><span>Demo speed</span><select id="demoSpeed"><option value="1">1× realistic</option><option value="4">4×</option><option value="8" selected>8× test</option><option value="16">16× fast</option></select></div>
-<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · INTERACTIVE</span></div>
+<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · STABLE MARKERS</span></div><div class="setting"><span>V1.9 map engine</span><span class="pill">PERSISTENT MARKERS · NATIVE ROTATION</span></div>
 <p style="color:#8da4ba">HOME is fixed for the wall display. V1.8 orientation is calculated from actual successive aircraft positions. The displayed nose no longer relies on the reported track value. Demo UAE39 follows a fixed curved route specifically to verify turning.</p></div></section>
 </main>
 <nav><button class="active" data-page="home">✈ FLIGHT</button><button data-page="map">⌖ MAP</button><button data-page="radar">☂ RADAR</button><button data-page="nearby">☷ NEARBY</button><button data-page="interesting">★ INTERESTING</button><button data-page="settings">⚙ SETTINGS</button></nav>
@@ -84,7 +84,7 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 <script type="module">
 import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.mjs';
 const $=id=>document.getElementById(id), R=3958.8, DEG=Math.PI/180;
-let home={lat:+localStorage.fwlat||52.45,lon:+localStorage.fwlon||-1.93}, selected=0, following=false, maps={}, markers={mini:[],full:[]}, liveTimer=null;
+let home={lat:+localStorage.fwlat||52.45,lon:+localStorage.fwlon||-1.93}, selected=0, following=false, maps={}, markers={mini:new Map(),full:new Map()}, homeMarkers={}, liveTimer=null;
 let trackedId=null, histories={}, trackSourceReady=false;
 let renderStates={}, radarFrames=[], radarIndex=0, radarPlaying=true, radarTimer=null;
 let lastSourcePositions={};
@@ -112,7 +112,7 @@ function syncRenderTargets(){
    lastSourcePositions[p.id]={lat:p.lat,lon:p.lon};
  });
 }
-function animateRenderStates(){
+function animateRenderStates(ts){
  planes.forEach(p=>{
    let r=ensureRenderState(p);if(r.targetLat==null)return;
    let oldLat=r.lat,oldLon=r.lon;
@@ -124,7 +124,7 @@ function animateRenderStates(){
      r.visualBearing=norm360(r.visualBearing+Math.max(-3.0,Math.min(3.0,turn)));
    }
  });
- updateMarkerPositions();
+ updateMarkerPositions(ts||performance.now());
  requestAnimationFrame(animateRenderStates);
 }
 function rememberPositions(){
@@ -162,11 +162,12 @@ function status(p){let d=dist(p),thr=1;if(d<=thr)return"OVERHEAD";return angleDi
 function score(p){let pass=projectedPass(p),d=dist(p),approach=status(p)==="APPROACHING";return (approach?100:0)-pass*12-d*.5+(p.tag?5:0)}
 function focusAircraft(){return [...planes].filter(p=>p.lat!=null&&p.lon!=null).sort((a,b)=>score(b)-score(a))[0]||null}
 function initMaps(){
- const style={version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,minzoom:0,maxzoom:19,attribution:'© OpenStreetMap contributors'}},layers:[{id:'osm',type:'raster',source:'osm',paint:{'raster-saturation':-0.30,'raster-brightness-max':0.78,'raster-contrast':0.12}}]};
- maps.mini=new maplibregl.Map({container:'miniMap',style:JSON.parse(JSON.stringify(style)),center:[home.lon,home.lat],zoom:9.0,interactive:false,attributionControl:false,renderWorldCopies:false});
- maps.full=new maplibregl.Map({container:'fullMap',style:JSON.parse(JSON.stringify(style)),center:[home.lon,home.lat],zoom:9.3,attributionControl:true,renderWorldCopies:false});
+ const style={version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,minzoom:0,maxzoom:19,attribution:'© OpenStreetMap contributors'}},layers:[{id:'osm',type:'raster',source:'osm',paint:{'raster-saturation':-0.30,'raster-brightness-max':0.78,'raster-contrast':0.12,'raster-fade-duration':0}}]};
+ maps.mini=new maplibregl.Map({container:'miniMap',style:JSON.parse(JSON.stringify(style)),center:[home.lon,home.lat],zoom:9.0,interactive:false,attributionControl:false,renderWorldCopies:false,fadeDuration:0});
+ maps.full=new maplibregl.Map({container:'fullMap',style:JSON.parse(JSON.stringify(style)),center:[home.lon,home.lat],zoom:9.3,attributionControl:true,renderWorldCopies:false,fadeDuration:0});
  maps.full.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
- Object.values(maps).forEach(m=>m.on('load',()=>renderMarkers()));
+ Object.values(maps).forEach(m=>m.on('load',()=>reconcileMarkers()));
+ maps.full.dragRotate.disable(); maps.full.touchZoomRotate.disableRotation();
  maps.full.on('load',()=>{
    if(!maps.full.getSource('trackedTrail')){
      maps.full.addSource('trackedTrail',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -181,27 +182,65 @@ function initMaps(){
  maps.full.on('mousedown',startHold); maps.full.on('mouseup',cancelHold); maps.full.on('dragstart',cancelHold);
  maps.full.on('touchstart',startHold); maps.full.on('touchend',cancelHold); maps.full.on('touchmove',cancelHold);
 }
-function markerEl(p,i){
- let e=document.createElement('div');e.className='airmarker'+(i===selected?' sel':'');
- // SVG nose points UP at 0 degrees. Rotation now maps directly to ADS-B track:
- // 0=N, 90=E, 180=S, 270=W.
+function markerEl(p){
+ let e=document.createElement('div');e.className='airmarker';
  e.innerHTML='<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2 L24 16 L37 22 L37 26 L24 23 L23 34 L29 38 L29 40 L20 37 L11 40 L11 38 L17 34 L16 23 L3 26 L3 22 L16 16 Z"/></svg>';
- let rr=ensureRenderState(p);e.style.transform=`rotate(${rr.visualBearing||0}deg)`;
- e.onclick=()=>{selected=i;updateSelected();show('map')};return e
+ e.onclick=()=>{let i=planes.findIndex(x=>x.id===p.id);if(i>=0){selected=i;updateSelected();show("map")}};
+ return e
 }
-function clearMarkers(){Object.values(markers).flat().forEach(m=>m.remove());markers={mini:[],full:[]}}
-
-function updateMarkerPositions(){
+function reconcileMarkers(){
+ if(!maps.mini||!maps.full)return;
  ['mini','full'].forEach(k=>{
-   let arr=markers[k]||[]; if(!arr.length)return;
-   // index 0 is HOME marker; aircraft follow.
-   planes.forEach((p,i)=>{let r=renderStates[p.id];let mk=arr[i+1];if(r&&mk){mk.setLngLat([r.lon,r.lat]);let el=mk.getElement();el.style.transform=`rotate(${r.visualBearing||0}deg)`;}});
+   let m=maps[k]; if(!m?.loaded())return;
+   if(!homeMarkers[k]){
+     let h=document.createElement('div');h.className='homeMarker';h.textContent='◎';
+     homeMarkers[k]=new maplibregl.Marker({element:h,anchor:'center',subpixelPositioning:true}).setLngLat([home.lon,home.lat]).addTo(m);
+   } else homeMarkers[k].setLngLat([home.lon,home.lat]);
+
+   let wanted=new Set(planes.filter(p=>p.lat!=null&&p.lon!=null).map(p=>p.id));
+   for(let [id,mk] of markers[k]){if(!wanted.has(id)){mk.remove();markers[k].delete(id)}}
+   planes.forEach(p=>{
+     if(p.lat==null||p.lon==null)return;
+     let mk=markers[k].get(p.id);
+     if(!mk){
+       let el=markerEl(p);
+       mk=new maplibregl.Marker({
+         element:el,anchor:'center',rotation:ensureRenderState(p).visualBearing||0,
+         rotationAlignment:'map',pitchAlignment:'map',subpixelPositioning:true
+       }).setLngLat([p.lon,p.lat]).addTo(m);
+       markers[k].set(p.id,mk);
+     }
+     mk.getElement().classList.toggle('sel',planes[selected]?.id===p.id);
+   });
  });
- if(following&&trackedId&&maps.full?.loaded()){let r=renderStates[trackedId];if(r)maps.full.easeTo({center:[r.lon,r.lat],duration:0});}
 }
-
-function renderMarkers(){if(!maps.mini||!maps.full)return;clearMarkers();Object.entries(maps).forEach(([k,m])=>{let h=document.createElement('div');h.className='homeMarker';h.textContent='◎';markers[k].push(new maplibregl.Marker({element:h,anchor:'center'}).setLngLat([home.lon,home.lat]).addTo(m));planes.forEach((p,i)=>{if(p.lat==null||p.lon==null)return;markers[k].push(new maplibregl.Marker({element:markerEl(p,i),anchor:'center'}).setLngLat([p.lon,p.lat]).addTo(m))})})}
-
+let lastCameraFollow=0;
+function updateMarkerPositions(ts=0){
+ ['mini','full'].forEach(k=>{
+   let store=markers[k]; if(!store)return;
+   planes.forEach(p=>{
+     let r=renderStates[p.id],mk=store.get(p.id);
+     if(r&&mk){mk.setLngLat([r.lon,r.lat]);mk.setRotation(r.visualBearing||0);
+       mk.getElement().classList.toggle('sel',planes[selected]?.id===p.id);
+     }
+   });
+ });
+ // Camera following is throttled. Re-centering every animation frame caused needless map repaints.
+ if(following&&trackedId&&maps.full?.loaded() && ts-lastCameraFollow>250){
+   let r=renderStates[trackedId];if(r){maps.full.jumpTo({center:[r.lon,r.lat]});lastCameraFollow=ts}
+ }
+}
+function updateTrail(){
+ if(!trackSourceReady||!maps.full?.getSource('trackedTrail'))return;
+ let feats=[];
+ if(trackedId){
+   let h=histories[trackedId]||[];
+   if(h.length>1)feats=[{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:h.map(q=>[q.lon,q.lat])}}];
+ }
+ maps.full.getSource('trackedTrail').setData({type:'FeatureCollection',features:feats});
+ $("trackBadge").textContent=trackedId?"Bright trail · last 5 min":"Trail hidden";
+ $("trackBadge").classList.toggle("on",!!trackedId);
+}
 const aircraftFamilies={
  A388:["A380","wide"],A380:["A380","wide"],
  B744:["747","wide"],B748:["747","wide"],
@@ -239,19 +278,6 @@ function aircraftSVG(kind,label){
 function setAircraftVisual(p){
  const f=familyFor(p.code,p.type); $("aircraftVisual").innerHTML=aircraftSVG(f[1],f[0]); $("visualType").textContent=f[0];
 }
-
-function updateTrail(){
- if(!trackSourceReady||!maps.full?.getSource('trackedTrail'))return;
- let feats=[];
- if(trackedId){
-   let h=histories[trackedId]||[];
-   if(h.length>1)feats=[{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:h.map(q=>[q.lon,q.lat])}}];
- }
- maps.full.getSource('trackedTrail').setData({type:'FeatureCollection',features:feats});
- $("trackBadge").textContent=trackedId?"Bright trail · last 5 min":"Trail hidden";
- $("trackBadge").classList.toggle("on",!!trackedId);
-}
-
 function whySeeing(p){
  let pass=projectedPass(p), d=dist(p), bits=[];
  if(pass<1)bits.push(`Projected to pass within ${pass.toFixed(1)} miles of HOME`);
@@ -262,9 +288,8 @@ function whySeeing(p){
  if(p.tag)bits.push(`${p.tag} aircraft flagged as interesting`);
  return bits.join(" · ");
 }
-
 function updateHome(){let p=focusAircraft();if(!p){$("call").textContent="—";$("airline").textContent="No aircraft currently selected";$("distance").textContent="—";$("aircraftVisual").innerHTML=aircraftSVG("generic","NO AIRCRAFT");return}$("call").textContent=p.id;$("airline").textContent=p.airline||"Aircraft";$("type").textContent=(p.type||p.code||"Type unknown")+" · "+(p.reg||"—");$("from").textContent=p.from||"LIVE";$("to").textContent=p.to||"—";$("alt").textContent=(p.alt??0).toLocaleString();$("spd").textContent=Math.round(p.spd||0);$("distance").textContent=dist(p).toFixed(1);$("track").textContent=Math.round(p.track||0)+"°";$("pass").textContent=projectedPass(p).toFixed(1)+" mi";setAircraftVisual(p);$("whyText").textContent=whySeeing(p);if(maps.mini?.loaded())maps.mini.easeTo({center:[home.lon,home.lat],duration:500});}
-function updateSelected(){let p=planes[selected]||planes[0];if(!p)return;$("follow").textContent=trackedId===p.id?"STOP TRACKING":"TRACK AIRCRAFT";$("mcall").textContent=p.id;$("mtype").textContent=(p.airline||"Aircraft")+" · "+(p.type||p.code||"Unknown type");$("mreg").textContent=p.reg||"Registration unavailable";$("mdetail").innerHTML=(p.alt??0).toLocaleString()+" ft<br>"+Math.round(p.spd||0)+" mph<br>"+dist(p).toFixed(1)+" miles from home<br>Track "+Math.round(p.track||0)+"°";$("detailPanel").innerHTML=`Route <b>${p.from||"Not available"} → ${p.to||"Not available"}</b><br><br>Projected pass <b>${projectedPass(p).toFixed(1)} miles</b><br><br>Track <b>${Math.round(p.track||0)}°</b><br><br>Interesting <b>${p.tag||"Normal traffic"}</b>`;renderMarkers();rows();if(following&&maps.full?.loaded())maps.full.easeTo({center:[p.lon,p.lat],duration:800})}
+function updateSelected(){let p=planes[selected]||planes[0];if(!p)return;$("follow").textContent=trackedId===p.id?"STOP TRACKING":"TRACK AIRCRAFT";$("mcall").textContent=p.id;$("mtype").textContent=(p.airline||"Aircraft")+" · "+(p.type||p.code||"Unknown type");$("mreg").textContent=p.reg||"Registration unavailable";$("mdetail").innerHTML=(p.alt??0).toLocaleString()+" ft<br>"+Math.round(p.spd||0)+" mph<br>"+dist(p).toFixed(1)+" miles from home<br>Track "+Math.round(p.track||0)+"°";$("detailPanel").innerHTML=`Route <b>${p.from||"Not available"} → ${p.to||"Not available"}</b><br><br>Projected pass <b>${projectedPass(p).toFixed(1)} miles</b><br><br>Track <b>${Math.round(p.track||0)}°</b><br><br>Interesting <b>${p.tag||"Normal traffic"}</b>`;reconcileMarkers();rows();}
 function rows(){let near=[...planes].sort((a,b)=>dist(a)-dist(b));$("nearRows").innerHTML=near.map(p=>`<div class="row" data-i="${planes.indexOf(p)}"><b>${p.id}</b><span>${p.code||"—"}</span><span>${dist(p).toFixed(1)} mi</span><span>${(p.alt??0).toLocaleString()} ft</span><span>${p.tag||"—"}</span></div>`).join("");$("intRows").innerHTML=planes.filter(p=>p.tag).map(p=>`<div class="row" data-i="${planes.indexOf(p)}"><b>${p.id}</b><span>${p.code||"—"}</span><span>${dist(p).toFixed(1)} mi</span><span>${(p.alt??0).toLocaleString()} ft</span><span class="tag">${p.tag}</span></div>`).join("");document.querySelectorAll(".row").forEach(r=>r.onclick=()=>{selected=+r.dataset.i;updateSelected();show("map")})}
 function show(id){document.querySelectorAll(".page,nav button").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.querySelector(`button[data-page="${id}"]`).classList.add("active");setTimeout(()=>{if(id==="map")maps.full?.resize();if(id==="home")maps.mini?.resize();if(id==="radar"){initRadarMap();setTimeout(()=>maps.radar?.resize(),80)}},100)}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.page));
@@ -280,10 +305,10 @@ async function loadLive(){
  try{
   let rad=+$("radius").value,u=`https://api.adsb.lol/v2/lat/${home.lat}/lon/${home.lon}/dist/${rad}`,r=await fetch(u,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);let d=await r.json();
   planes=(d.ac||[]).filter(a=>a.lat!=null&&a.lon!=null).map(a=>({id:(a.flight||a.r||a.hex||"UNKNOWN").trim(),airline:"Live aircraft",type:a.t||"Type unknown",code:a.t||"—",reg:a.r||"—",from:"LIVE",to:"—",alt:(a.alt_baro==="ground"?0:(a.alt_baro??a.alt_geom??0)),spd:(a.gs||0)*1.15078,track:a.track||0,lat:a.lat,lon:a.lon,tag:classify(a),seen:a.seen}));
-  selected=0;$("modeLabel").textContent="LIVE · "+planes.length+" AIRCRAFT";$("liveDot").className="dot";$("dataAge").textContent="Live";rememberPositions();updateHome();updateSelected();updateTrail()
+  selected=0;$("modeLabel").textContent="LIVE · "+planes.length+" AIRCRAFT";$("liveDot").className="dot";$("dataAge").textContent="Live";rememberPositions();syncRenderTargets();reconcileMarkers();updateHome();updateSelected();updateTrail()
  }catch(e){$("modeLabel").textContent="LIVE FEED ERROR";$("liveDot").className="dot off";toast("Live feed unavailable — switch to Demo to continue")}
 }
-function demoTick(){if($("dataMode").value!=="demo")return;planes.forEach(moveDemo);syncRenderTargets();let p=planes[0];rememberPositions();syncRenderTargets();updateHome();updateSelected();updateTrail()}
+function demoTick(){if($("dataMode").value!=="demo")return;planes.forEach(moveDemo);syncRenderTargets();let p=planes[0];rememberPositions();syncRenderTargets();reconcileMarkers();updateHome();updateSelected();updateTrail()}
 function setMode(){clearInterval(liveTimer);if($("dataMode").value==="live"){$("modeLabel").textContent="CONNECTING LIVE…";loadLive();liveTimer=setInterval(loadLive,10000)}else{location.reload()}}
 $("dataMode").onchange=setMode;$("radius").onchange=()=>{if($("dataMode").value==="live")loadLive()};
 $("lat").value=home.lat.toFixed(5);$("lon").value=home.lon.toFixed(5);
