@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#020407"><title>FlightWall V1.10</title>
+<meta name="theme-color" content="#020407"><title>FlightWall V1.11</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.css">
 <style>
 :root{--line:#1b3147;--blue:#269cff;--txt:#f5f8fc;--muted:#8da4ba;--green:#50d494;--amber:#ffc857;--red:#ff7474}
@@ -31,6 +31,11 @@ main{flex:1;min-height:0;padding:1.4vh 1.7vw}.page{display:none;height:100%}.pag
 .whyBox{margin-top:1.2vh;padding:12px 14px;border:1px solid #234762;border-radius:12px;background:rgba(8,24,37,.78)}
 .whyTitle{font-size:10px;letter-spacing:.12em;color:#67bfff;font-weight:900;margin-bottom:5px}
 .whyText{font-size:clamp(12px,1.15vw,16px);color:#dce9f3;line-height:1.35}
+.flightFacts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.flightFact{background:rgba(8,23,34,.72);border:1px solid #1e3c52;border-radius:9px;padding:8px}
+.flightFact span{display:block;color:#7894aa;font-size:9px;letter-spacing:.09em}.flightFact b{display:block;margin-top:3px;font-size:13px;color:#e8f2f8}
+.momentCard{padding:10px;border-bottom:1px solid #1d3547}.momentCard:last-child{border-bottom:0}.momentTitle{font-weight:900}.momentMeta{font-size:11px;color:#8ba1b3;margin-top:3px}
+
 .radarLayout{height:100%;display:grid;grid-template-columns:minmax(220px,25%) 1fr;gap:1vw}
 .radarSide{padding:1.8vh 1.3vw;overflow:auto}.radarSide h2{margin:0 0 8px}.radarTime{font-size:24px;font-weight:900;margin:8px 0}.radarCtl{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}
 .radarCtl button{background:#0a1723;color:#d9e8f3;border:1px solid #31516d;border-radius:8px;padding:8px 10px;font-weight:800}.radarCtl button.on{background:#0b67ae}
@@ -47,12 +52,13 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{font-size:9px}.maplibregl-ctrl-group{background:#0b1520}.maplibregl-ctrl button span{filter:invert(1)}
 @media(max-width:760px){.home{grid-template-columns:1fr}.side{display:none}.mapLayout{grid-template-columns:42% 58%}.call{font-size:13vw}.row{grid-template-columns:1.2fr .8fr .8fr}.row span:nth-child(4),.row span:nth-child(5){display:none}}
 </style></head><body><div class="app"><div id="toast"></div>
-<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.10 · <span id="clock"></span></div></header>
+<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.11 · <span id="clock"></span></div></header>
 <main>
 <section id="home" class="page active"><div class="home"><div class="card hero">
 <div class="flightTop"><div><div id="call" class="call">UAE39</div><div id="airline" class="airline">Emirates</div><div id="type" class="type">Airbus A380-800 · A6-EVN</div></div><div id="aircraftVisual" class="aircraftVisual"></div></div>
 <div class="route"><div id="from" class="airport">DXB</div><div class="routeLine"><b>✈</b></div><div id="to" class="airport">BHX</div></div>
-<div class="metrics"><div><div id="alt" class="mv">12,600</div><div class="ml">ALTITUDE FT</div></div><div><div id="spd" class="mv">286</div><div class="ml">SPEED MPH</div></div><div><div id="distance" class="mv">4.2</div><div class="ml">MILES FROM HOME</div></div></div><div class="whyBox"><div class="whyTitle">WHY YOU’RE SEEING THIS</div><div id="whyText" class="whyText">FlightWall is calculating the aircraft most relevant to HOME.</div></div></div>
+<div class="metrics"><div><div id="alt" class="mv">12,600</div><div class="ml">ALTITUDE FT</div></div><div><div id="spd" class="mv">286</div><div class="ml">SPEED MPH</div></div><div><div id="distance" class="mv">4.2</div><div class="ml">MILES FROM HOME</div></div></div><div class="whyBox"><div class="whyTitle">WHY YOU’RE SEEING THIS</div><div id="whyText" class="whyText">FlightWall is calculating the aircraft most relevant to HOME.</div>
+<div class="flightFacts"><div class="flightFact"><span>VERTICAL</span><b id="verticalFact">—</b></div><div class="flightFact"><span>EXACT TYPE</span><b id="exactTypeFact">—</b></div><div class="flightFact"><span>REGISTRATION</span><b id="regFact">—</b></div></div></div></div>
 <div class="side"><div class="mapbox"><div id="miniMap" class="mapcanvas"></div><div class="mapshade"></div></div><div class="card sideinfo"><div>PROJECTED PASS<b id="pass">0.4 mi</b></div><div>TRACK<b id="track">317°</b></div><div>AIRCRAFT<b id="visualType">A380</b></div><div>DATA<b id="dataAge">Demo</b></div></div></div></div></section>
 
 <section id="map" class="page"><div class="mapLayout"><div class="card left"><div style="color:#269cff;font-weight:800">SELECTED AIRCRAFT</div><div id="mcall" class="big">UAE39</div><div id="mtype">Emirates · Airbus A380-800</div><div id="mreg" class="small">A6-EVN</div><div id="mdetail"></div><button class="action" id="follow">TRACK AIRCRAFT</button><span id="trackBadge" class="trackBadge">Trail hidden</span><button class="action secondary" id="details">MORE DETAILS</button><div id="detailPanel" class="details"></div></div><div class="mapbox"><div id="fullMap" class="mapcanvas"></div>
@@ -70,16 +76,16 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 </div><div class="mapbox"><div id="radarMap" class="mapcanvas"></div><div class="mapHint">HOME-centred weather radar</div></div></div></section>
 <section id="nearby" class="page"><div class="card list"><h2>Nearby aircraft</h2><div id="nearRows"></div></div></section>
 <section id="interesting" class="page"><div class="card list"><h2>Interesting aircraft</h2><div id="intRows"></div></div></section>
-<section id="settings" class="page"><div class="card settings"><h2>FlightWall settings</h2>
+<section id="moments" class="page"><div class="card" style="height:100%;overflow:auto"><h2>FlightWall Moments</h2><div class="small">Noteworthy aircraft observed around HOME on this device</div><div id="momentsList" style="margin-top:12px"></div><button id="clearMoments" class="action" style="max-width:220px">CLEAR HISTORY</button></div></section><section id="settings" class="page"><div class="card settings"><h2>FlightWall settings</h2>
 <div class="setting"><span>Data mode</span><select id="dataMode"><option value="demo">Demo aircraft</option><option value="live">LIVE Wi-Fi aircraft</option></select></div>
 <div class="setting"><span>Home location</span><div><input id="lat" class="coord" type="number" step=".00001"><input id="lon" class="coord" type="number" step=".00001"> <button id="locate" class="action" style="display:inline;width:auto;padding:8px;margin:0">USE DEVICE (OPTIONAL)</button></div></div>
 <div class="setting"><span>Live search radius</span><select id="radius"><option value="10">10 nm</option><option value="25" selected>25 nm</option><option value="50">50 nm</option></select></div>
 
 <div class="setting"><span>Demo speed</span><select id="demoSpeed"><option value="1">1× realistic</option><option value="4">4×</option><option value="8" selected>8× test</option><option value="16">16× fast</option></select></div>
-<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · STABLE MARKERS</span></div><div class="setting"><span>V1.10 movement engine</span><span class="pill">CONTINUOUS · TIME-BASED · DEAD RECKONING</span></div>
+<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · STABLE MARKERS</span></div><div class="setting"><span>V1.11 flight intelligence</span><span class="pill">ROUTE CONTEXT · VERTICAL STATE · MOMENTS</span></div>
 <p style="color:#8da4ba">HOME is fixed for the wall display. V1.10 continuously projects aircraft between data updates using speed and bearing, then gently corrects to the next observed position without stopping.</p></div></section>
 </main>
-<nav><button class="active" data-page="home">✈ FLIGHT</button><button data-page="map">⌖ MAP</button><button data-page="radar">☂ RADAR</button><button data-page="nearby">☷ NEARBY</button><button data-page="interesting">★ INTERESTING</button><button data-page="settings">⚙ SETTINGS</button></nav>
+<nav><button class="active" data-page="home">✈ FLIGHT</button><button data-page="map">⌖ MAP</button><button data-page="radar">☂ RADAR</button><button data-page="nearby">☷ NEARBY</button><button data-page="moments">◷ MOMENTS</button><button data-page="settings">⚙ SETTINGS</button></nav>
 </div>
 <script type="module">
 import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.mjs';
@@ -274,17 +280,48 @@ function aircraftSVG(kind,label){
 function setAircraftVisual(p){
  const f=familyFor(p.code,p.type); $("aircraftVisual").innerHTML=aircraftSVG(f[1],f[0]); $("visualType").textContent=f[0];
 }
+const airportNames={
+ BHX:"Birmingham",LHR:"London Heathrow",LGW:"London Gatwick",STN:"London Stansted",LTN:"London Luton",MAN:"Manchester",EMA:"East Midlands",
+ EDI:"Edinburgh",GLA:"Glasgow",BRS:"Bristol",LPL:"Liverpool",NCL:"Newcastle",DUB:"Dublin",BFS:"Belfast",
+ DXB:"Dubai",DOH:"Doha",AUH:"Abu Dhabi",JFK:"New York JFK",EWR:"Newark",ORD:"Chicago O’Hare",ATL:"Atlanta",
+ CDG:"Paris Charles de Gaulle",ORY:"Paris Orly",AMS:"Amsterdam",FRA:"Frankfurt",MUC:"Munich",MAD:"Madrid",BCN:"Barcelona",
+ IST:"Istanbul",ZRH:"Zurich",VIE:"Vienna",CPH:"Copenhagen",OSL:"Oslo",ARN:"Stockholm"
+};
+function airportLabel(code){let c=(code||"").trim().toUpperCase();return airportNames[c]||c||"Unknown"}
+function verticalLabel(p){
+ let vr=Number(p.vrate??p.vert_rate??p.baro_rate??p.geom_rate);
+ if(!Number.isFinite(vr)||Math.abs(vr)<150)return "Level";
+ return vr>0?`Climbing ${Math.round(Math.abs(vr)/50)*50} ft/min`:`Descending ${Math.round(Math.abs(vr)/50)*50} ft/min`;
+}
+let moments=JSON.parse(localStorage.getItem("fwMoments")||"[]"),lastMomentById={};
+function maybeSaveMoment(p){
+ if(!p)return;let pass=projectedPass(p),interesting=pass<1.0||["A388","B744","B748","A400","C130"].includes((p.code||"").toUpperCase())||/military|helicopter/i.test(p.tag||"");
+ if(!interesting)return;let now=Date.now();if(lastMomentById[p.id]&&now-lastMomentById[p.id]<30*60*1000)return;
+ lastMomentById[p.id]=now;moments.unshift({t:now,id:p.id,type:p.type||p.code||"Aircraft",reg:p.reg||"",from:p.from||"",to:p.to||"",pass:+pass.toFixed(1),alt:p.alt||0});
+ moments=moments.slice(0,50);localStorage.setItem("fwMoments",JSON.stringify(moments));renderMoments();
+}
+function renderMoments(){
+ let box=$("momentsList");if(!box)return;
+ if(!moments.length){box.innerHTML='<div class="small">No Moments recorded yet. Close passes and selected unusual aircraft will appear here automatically.</div>';return}
+ box.innerHTML=moments.map(m=>`<div class="momentCard"><div class="momentTitle">${m.id} · ${m.type}</div><div class="momentMeta">${new Date(m.t).toLocaleString()} · ${m.pass} mi projected pass · ${(m.alt||0).toLocaleString()} ft${m.from||m.to?` · ${airportLabel(m.from)} → ${airportLabel(m.to)}`:""}${m.reg?` · ${m.reg}`:""}</div></div>`).join("");
+}
+
 function whySeeing(p){
- let pass=projectedPass(p), d=dist(p), bits=[];
+ let pass=projectedPass(p),d=dist(p),bits=[];
  if(pass<1)bits.push(`Projected to pass within ${pass.toFixed(1)} miles of HOME`);
  else if(pass<3)bits.push(`Projected close pass: ${pass.toFixed(1)} miles from HOME`);
  else bits.push(`${d.toFixed(1)} miles from HOME`);
- if((p.alt||0)<8000)bits.push(`${(p.alt||0).toLocaleString()} ft — relatively low`);
- else if((p.alt||0)>28000)bits.push(`Cruising at ${(p.alt||0).toLocaleString()} ft`);
- if(p.tag)bits.push(`${p.tag} aircraft flagged as interesting`);
+ bits.push(verticalLabel(p));
+ if(p.from||p.to)bits.push(`${airportLabel(p.from)} → ${airportLabel(p.to)}`);
+ if((p.alt||0)>28000)bits.push(`Cruising at ${(p.alt||0).toLocaleString()} ft`);
+ else if((p.alt||0)<8000)bits.push(`${(p.alt||0).toLocaleString()} ft`);
+ if(p.tag)bits.push(`${p.tag}`);
  return bits.join(" · ");
 }
-function updateHome(){let p=focusAircraft();if(!p){$("call").textContent="—";$("airline").textContent="No aircraft currently selected";$("distance").textContent="—";$("aircraftVisual").innerHTML=aircraftSVG("generic","NO AIRCRAFT");return}$("call").textContent=p.id;$("airline").textContent=p.airline||"Aircraft";$("type").textContent=(p.type||p.code||"Type unknown")+" · "+(p.reg||"—");$("from").textContent=p.from||"LIVE";$("to").textContent=p.to||"—";$("alt").textContent=(p.alt??0).toLocaleString();$("spd").textContent=Math.round(p.spd||0);$("distance").textContent=dist(p).toFixed(1);$("track").textContent=Math.round(p.track||0)+"°";$("pass").textContent=projectedPass(p).toFixed(1)+" mi";setAircraftVisual(p);$("whyText").textContent=whySeeing(p);if(maps.mini?.loaded())maps.mini.easeTo({center:[home.lon,home.lat],duration:500});}
+function updateHome(){let p=focusAircraft();if(!p){$("call").textContent="—";$("airline").textContent="No aircraft currently selected";$("distance").textContent="—";$("aircraftVisual").innerHTML=aircraftSVG("generic","NO AIRCRAFT");return}$("call").textContent=p.id;$("airline").textContent=p.airline||"Aircraft";$("type").textContent=(p.type||p.code||"Type unknown")+" · "+(p.reg||"—");$("from").textContent=p.from||"LIVE";$("to").textContent=p.to||"—";$("alt").textContent=(p.alt??0).toLocaleString();$("spd").textContent=Math.round(p.spd||0);$("distance").textContent=dist(p).toFixed(1);$("track").textContent=Math.round(p.track||0)+"°";$("pass").textContent=projectedPass(p).toFixed(1)+" mi";setAircraftVisual(p);$("whyText").textContent=whySeeing(p);
+ $("verticalFact").textContent=verticalLabel(p);$("exactTypeFact").textContent=p.type||p.code||"Unknown";$("regFact").textContent=p.reg||"Unknown";
+ if(p.from||p.to){$("from").textContent=airportLabel(p.from);$("to").textContent=airportLabel(p.to)}
+ maybeSaveMoment(p);if(maps.mini?.loaded())maps.mini.easeTo({center:[home.lon,home.lat],duration:500});}
 function updateSelected(){let p=planes[selected]||planes[0];if(!p)return;$("follow").textContent=trackedId===p.id?"STOP TRACKING":"TRACK AIRCRAFT";$("mcall").textContent=p.id;$("mtype").textContent=(p.airline||"Aircraft")+" · "+(p.type||p.code||"Unknown type");$("mreg").textContent=p.reg||"Registration unavailable";$("mdetail").innerHTML=(p.alt??0).toLocaleString()+" ft<br>"+Math.round(p.spd||0)+" mph<br>"+dist(p).toFixed(1)+" miles from home<br>Track "+Math.round(p.track||0)+"°";$("detailPanel").innerHTML=`Route <b>${p.from||"Not available"} → ${p.to||"Not available"}</b><br><br>Projected pass <b>${projectedPass(p).toFixed(1)} miles</b><br><br>Track <b>${Math.round(p.track||0)}°</b><br><br>Interesting <b>${p.tag||"Normal traffic"}</b>`;reconcileMarkers();rows();}
 function rows(){let near=[...planes].sort((a,b)=>dist(a)-dist(b));$("nearRows").innerHTML=near.map(p=>`<div class="row" data-i="${planes.indexOf(p)}"><b>${p.id}</b><span>${p.code||"—"}</span><span>${dist(p).toFixed(1)} mi</span><span>${(p.alt??0).toLocaleString()} ft</span><span>${p.tag||"—"}</span></div>`).join("");$("intRows").innerHTML=planes.filter(p=>p.tag).map(p=>`<div class="row" data-i="${planes.indexOf(p)}"><b>${p.id}</b><span>${p.code||"—"}</span><span>${dist(p).toFixed(1)} mi</span><span>${(p.alt??0).toLocaleString()} ft</span><span class="tag">${p.tag}</span></div>`).join("");document.querySelectorAll(".row").forEach(r=>r.onclick=()=>{selected=+r.dataset.i;updateSelected();show("map")})}
 function show(id){document.querySelectorAll(".page,nav button").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.querySelector(`button[data-page="${id}"]`).classList.add("active");setTimeout(()=>{if(id==="map")maps.full?.resize();if(id==="home")maps.mini?.resize();if(id==="radar"){initRadarMap();setTimeout(()=>maps.radar?.resize(),80)}},100)}
@@ -337,6 +374,8 @@ function setMapRange(mi){
  maps.full?.easeTo({center:[home.lon,home.lat],zoom:zoomByRange[mi]||9.3,duration:700});
 }
 document.querySelectorAll(".rangeBar button").forEach(b=>b.onclick=()=>setMapRange(+b.dataset.range));
+if($("clearMoments"))$("clearMoments").onclick=()=>{moments=[];localStorage.removeItem("fwMoments");renderMoments();toast("Moments cleared")};
+renderMoments();
 initMaps();rememberPositions();syncRenderTargets();updateHome();updateSelected();setInterval(demoTick,1000);requestAnimationFrame(animateRenderStates);
 function clock(){let d=new Date();$("clock").textContent=d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}clock();setInterval(clock,1000);
 </script></body></html>
