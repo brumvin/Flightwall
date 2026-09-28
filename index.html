@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#020407"><title>FlightWall V1.11</title>
+<meta name="theme-color" content="#020407"><title>FlightWall V1.12</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.css">
 <style>
 :root{--line:#1b3147;--blue:#269cff;--txt:#f5f8fc;--muted:#8da4ba;--green:#50d494;--amber:#ffc857;--red:#ff7474}
@@ -34,6 +34,8 @@ main{flex:1;min-height:0;padding:1.4vh 1.7vw}.page{display:none;height:100%}.pag
 .flightFacts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .flightFact{background:rgba(8,23,34,.72);border:1px solid #1e3c52;border-radius:9px;padding:8px}
 .flightFact span{display:block;color:#7894aa;font-size:9px;letter-spacing:.09em}.flightFact b{display:block;margin-top:3px;font-size:13px;color:#e8f2f8}
+.liveNote{margin-top:10px;padding:9px 11px;border-radius:9px;background:#0a1824;border:1px solid #24465d;color:#91a9ba;font-size:11px}
+.liveNote.ok{color:#8ce3ae;border-color:#285d43}.liveNote.bad{color:#ffb2a8;border-color:#713d39}
 .momentCard{padding:10px;border-bottom:1px solid #1d3547}.momentCard:last-child{border-bottom:0}.momentTitle{font-weight:900}.momentMeta{font-size:11px;color:#8ba1b3;margin-top:3px}
 
 .radarLayout{height:100%;display:grid;grid-template-columns:minmax(220px,25%) 1fr;gap:1vw}
@@ -51,8 +53,24 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 .rangeBar button.on{background:#0b67ae;border-color:#269cff;color:#fff}
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{font-size:9px}.maplibregl-ctrl-group{background:#0b1520}.maplibregl-ctrl button span{filter:invert(1)}
 @media(max-width:760px){.home{grid-template-columns:1fr}.side{display:none}.mapLayout{grid-template-columns:42% 58%}.call{font-size:13vw}.row{grid-template-columns:1.2fr .8fr .8fr}.row span:nth-child(4),.row span:nth-child(5){display:none}}
+@media(orientation:portrait){
+ #home .home{grid-template-columns:1fr!important}
+ #home .side{display:none!important}
+ #home .hero{height:100%;display:flex;flex-direction:column;justify-content:center;padding:4vh 5vw}
+ #home .call{font-size:clamp(58px,15vw,118px)}
+ #home .airline{font-size:clamp(20px,4vw,34px)}
+ #home .type{font-size:clamp(14px,2.8vw,22px)}
+ #home .aircraftVisual{height:20vh;min-height:130px}
+ #home .route{margin:3vh 0}
+ #home .airport{font-size:clamp(26px,6vw,48px)}
+ #home .metrics{margin-top:2vh}
+ #home .mv{font-size:clamp(30px,7vw,56px)}
+ #home .whyBox{margin-top:3vh}
+ #home .whyText{font-size:clamp(15px,2.5vw,22px)}
+ #home .flightFacts{margin-top:1.5vh}
+}
 </style></head><body><div class="app"><div id="toast"></div>
-<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.11 · <span id="clock"></span></div></header>
+<header><div class="brand">THE<span>FLIGHT</span>WALL</div><div class="status"><i id="liveDot" class="dot"></i><span id="modeLabel">DEMO</span> · V1.12 · <span id="clock"></span></div></header>
 <main>
 <section id="home" class="page active"><div class="home"><div class="card hero">
 <div class="flightTop"><div><div id="call" class="call">UAE39</div><div id="airline" class="airline">Emirates</div><div id="type" class="type">Airbus A380-800 · A6-EVN</div></div><div id="aircraftVisual" class="aircraftVisual"></div></div>
@@ -79,11 +97,11 @@ nav button{border:1px solid #284158;background:#08111a;color:#bfd0df;border-radi
 <section id="moments" class="page"><div class="card" style="height:100%;overflow:auto"><h2>FlightWall Moments</h2><div class="small">Noteworthy aircraft observed around HOME on this device</div><div id="momentsList" style="margin-top:12px"></div><button id="clearMoments" class="action" style="max-width:220px">CLEAR HISTORY</button></div></section><section id="settings" class="page"><div class="card settings"><h2>FlightWall settings</h2>
 <div class="setting"><span>Data mode</span><select id="dataMode"><option value="demo">Demo aircraft</option><option value="live">LIVE Wi-Fi aircraft</option></select></div>
 <div class="setting"><span>Home location</span><div><input id="lat" class="coord" type="number" step=".00001"><input id="lon" class="coord" type="number" step=".00001"> <button id="locate" class="action" style="display:inline;width:auto;padding:8px;margin:0">USE DEVICE (OPTIONAL)</button></div></div>
-<div class="setting"><span>Live search radius</span><select id="radius"><option value="10">10 nm</option><option value="25" selected>25 nm</option><option value="50">50 nm</option></select></div>
+<div class="setting"><span>Live search radius</span><select id="radius"><option value="10">10 nm</option><option value="25" selected>25 nm</option><option value="50">50 nm</option></select></div><div id="liveDiag" class="liveNote">Live feed not tested yet.</div>
 
 <div class="setting"><span>Demo speed</span><select id="demoSpeed"><option value="1">1× realistic</option><option value="4">4×</option><option value="8" selected>8× test</option><option value="16">16× fast</option></select></div>
-<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · STABLE MARKERS</span></div><div class="setting"><span>V1.11 flight intelligence</span><span class="pill">ROUTE CONTEXT · VERTICAL STATE · MOMENTS</span></div>
-<p style="color:#8da4ba">HOME is fixed for the wall display. V1.10 continuously projects aircraft between data updates using speed and bearing, then gently corrects to the next observed position without stopping.</p></div></section>
+<div class="setting"><span>Map</span><span class="pill">OPENSTREETMAP · STABLE MARKERS</span></div><div class="setting"><span>V1.12 display + live data</span><span class="pill">PORTRAIT FLIGHT VIEW · LIVE FALLBACK</span></div>
+<p style="color:#8da4ba">Portrait Flight mode is now details-only: no map is shown. Live mode first tries ADSB.lol directly and, for the GitHub Pages prototype, can fall back to a browser relay when cross-origin browser security blocks the direct request.</p></div></section>
 </main>
 <nav><button class="active" data-page="home">✈ FLIGHT</button><button data-page="map">⌖ MAP</button><button data-page="radar">☂ RADAR</button><button data-page="nearby">☷ NEARBY</button><button data-page="moments">◷ MOMENTS</button><button data-page="settings">⚙ SETTINGS</button></nav>
 </div>
@@ -334,12 +352,40 @@ $("follow").onclick=()=>{
 };
 $("details").onclick=()=>{$("detailPanel").classList.toggle("open");$("details").textContent=$("detailPanel").classList.contains("open")?"HIDE DETAILS":"MORE DETAILS"};
 function classify(a){let t=a.t||"";if(t==="A388")return"A380";if(["B744","B748","B77W","A35K"].includes(t))return"HEAVY";if((a.dbFlags||0)&1)return"MIL";if((a.alt_baro||99999)<3000)return"LOW";return""}
+async function fetchJsonWithFallback(url){
+ const attempts=[
+   {name:"Direct ADSB.lol",url},
+   {name:"Browser relay",url:`https://corsproxy.io/?url=${encodeURIComponent(url)}`}
+ ];
+ let errors=[];
+ for(const a of attempts){
+   try{
+     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+     let r=await fetch(a.url,{cache:"no-store",signal:controller.signal});clearTimeout(timer);
+     if(!r.ok)throw Error(`HTTP ${r.status}`);
+     let d=await r.json();return {data:d,source:a.name};
+   }catch(e){errors.push(`${a.name}: ${e.name==="AbortError"?"timeout":e.message}`)}
+ }
+ throw Error(errors.join(" | "));
+}
 async function loadLive(){
  try{
-  let rad=+$("radius").value,u=`https://api.adsb.lol/v2/lat/${home.lat}/lon/${home.lon}/dist/${rad}`,r=await fetch(u,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);let d=await r.json();
-  planes=(d.ac||[]).filter(a=>a.lat!=null&&a.lon!=null).map(a=>({id:(a.flight||a.r||a.hex||"UNKNOWN").trim(),airline:"Live aircraft",type:a.t||"Type unknown",code:a.t||"—",reg:a.r||"—",from:"LIVE",to:"—",alt:(a.alt_baro==="ground"?0:(a.alt_baro??a.alt_geom??0)),spd:(a.gs||0)*1.15078,track:a.track||0,lat:a.lat,lon:a.lon,tag:classify(a),seen:a.seen}));
-  selected=0;$("modeLabel").textContent="LIVE · "+planes.length+" AIRCRAFT";$("liveDot").className="dot";$("dataAge").textContent="Live";rememberPositions();syncRenderTargets();reconcileMarkers();updateHome();updateSelected();updateTrail()
- }catch(e){$("modeLabel").textContent="LIVE FEED ERROR";$("liveDot").className="dot off";toast("Live feed unavailable — switch to Demo to continue")}
+  let rad=+$("radius").value;
+  // ADSB.lol documents /v2/point/{lat}/{lon}/{radius}; direct browser access may be blocked by CORS.
+  let u=`https://api.adsb.lol/v2/point/${home.lat}/${home.lon}/${rad}`;
+  let result=await fetchJsonWithFallback(u),d=result.data;
+  let fresh=(d.ac||[]).filter(a=>a.lat!=null&&a.lon!=null);
+  if(!fresh.length)throw Error("Feed connected but returned no positioned aircraft in this radius");
+  planes=fresh.map(a=>({id:(a.flight||a.r||a.hex||"UNKNOWN").trim(),airline:"Live aircraft",type:a.t||"Type unknown",code:a.t||"—",reg:a.r||"—",from:"",to:"",alt:(a.alt_baro==="ground"?0:(a.alt_baro??a.alt_geom??0)),spd:(a.gs||0)*1.15078,track:a.track||0,lat:a.lat,lon:a.lon,vrate:a.baro_rate??a.geom_rate??0,tag:classify(a),seen:a.seen}));
+  selected=Math.min(selected,planes.length-1);
+  $("modeLabel").textContent=`LIVE · ${planes.length} AIRCRAFT`;$("liveDot").className="dot";$("dataAge").textContent=result.source;
+  let diag=$("liveDiag");if(diag){diag.className="liveNote ok";diag.textContent=`Connected: ${result.source} · ${planes.length} positioned aircraft`}
+  rememberPositions();syncRenderTargets();reconcileMarkers();updateHome();updateSelected();updateTrail()
+ }catch(e){
+  $("modeLabel").textContent="LIVE FEED ERROR";$("liveDot").className="dot off";
+  let diag=$("liveDiag");if(diag){diag.className="liveNote bad";diag.textContent=`Live error: ${e.message}`}
+  toast("Live feed unavailable — details are shown in Settings")
+ }
 }
 function demoTick(){if($("dataMode").value!=="demo")return;planes.forEach(moveDemo);syncRenderTargets();let p=planes[0];rememberPositions();syncRenderTargets();reconcileMarkers();updateHome();updateSelected();updateTrail()}
 function setMode(){clearInterval(liveTimer);if($("dataMode").value==="live"){$("modeLabel").textContent="CONNECTING LIVE…";loadLive();liveTimer=setInterval(loadLive,10000)}else{location.reload()}}
